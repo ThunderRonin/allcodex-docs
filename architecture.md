@@ -159,8 +159,8 @@ All LLM and embedding calls go through OpenRouter:
 |---|---|---|
 | Brain Dump | `minimax/minimax-m2.5` | Entity extraction from raw text |
 | Consistency Check | `moonshotai/kimi-k2.5` | Contradiction detection |
-| Relationship Suggestions | `openai/gpt-4o-mini` | Connection proposals |
-| Gap Detection | `google/gemini-2.0-pro-exp-02-05` | Coverage analysis |
+| Relationship Suggestions | `openai/gpt-5-nano` | Connection proposals |
+| Gap Detection | `google/gemini-3.1-pro-preview` | Coverage analysis |
 | Embeddings | `qwen/qwen3-embedding-8b` | 1536-dim vectors for semantic search |
 
 ### AllKnower API routes
@@ -710,7 +710,7 @@ graph TB
     end
 
     subgraph ExternalAPIs["External Services"]
-        OpenRouter["OpenRouter API<br/>LLM: minimax-m2.5, kimi-k2.5<br/>Embed: qwen3-embedding-8b"]
+        OpenRouter["OpenRouter API<br/>LLM: minimax-m2.5, kimi-k2.5, gpt-5-nano, gemini-3.1<br/>Embed: qwen3-embedding-8b"]
     end
 
     subgraph Storage["AllKnower Storage"]
