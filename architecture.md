@@ -157,11 +157,11 @@ All LLM and embedding calls go through OpenRouter:
 
 | Task | Model | Purpose |
 |---|---|---|
-| Brain Dump | `x-ai/grok-4.1-fast` | Entity extraction from raw text |
+| Brain Dump | `minimax/minimax-m2.5` | Entity extraction from raw text |
 | Consistency Check | `moonshotai/kimi-k2.5` | Contradiction detection |
-| Relationship Suggestions | `x-ai/grok-4.1-fast` | Connection proposals |
-| Gap Detection | `x-ai/grok-4.1-fast` | Coverage analysis |
-| Embeddings | `google/gemini-embedding-001` | 3072-dim vectors for semantic search |
+| Relationship Suggestions | `openai/gpt-4o-mini` | Connection proposals |
+| Gap Detection | `google/gemini-2.0-pro-exp-02-05` | Coverage analysis |
+| Embeddings | `qwen/qwen3-embedding-8b` | 1536-dim vectors for semantic search |
 
 ### AllKnower API routes
 
