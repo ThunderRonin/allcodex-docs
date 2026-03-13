@@ -161,7 +161,7 @@ All LLM and embedding calls go through OpenRouter:
 | Consistency Check | `moonshotai/kimi-k2.5` | Contradiction detection |
 | Relationship Suggestions | `openai/gpt-5-nano` | Connection proposals |
 | Gap Detection | `google/gemini-3.1-pro-preview` | Coverage analysis |
-| Embeddings | `qwen/qwen3-embedding-8b` | 1536-dim vectors for semantic search |
+| Embeddings | `qwen/qwen3-embedding-8b` | 4096-dim vectors for semantic search |
 
 ### AllKnower API routes
 
@@ -575,7 +575,7 @@ Single table `lore_embeddings`:
 | `noteTitle` | string | Note title at index time |
 | `chunkIndex` | number | Position in the note's chunk array |
 | `content` | string | Plain text chunk |
-| `vector` | float[1536] | Embedding from qwen/qwen3-embedding-8b |
+| `vector` | float[4096] | Embedding from qwen/qwen3-embedding-8b |
 
 ---
 
