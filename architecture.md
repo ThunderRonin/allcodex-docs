@@ -157,11 +157,13 @@ All LLM and embedding calls go through OpenRouter:
 
 | Task | Model | Purpose |
 |---|---|---|
-| Brain Dump | `minimax/minimax-m2.5` | Entity extraction from raw text |
-| Consistency Check | `moonshotai/kimi-k2.5` | Contradiction detection |
-| Relationship Suggestions | `openai/gpt-5-nano` | Connection proposals |
+| Brain Dump | `xiaomi/mimo-v2-pro` | Entity extraction from raw text |
+| Consistency Check | `anthropic/claude-sonnet-4.6` | Contradiction detection |
+| Relationship Suggestions | `google/gemini-3-flash-preview` | Connection proposals |
 | Gap Detection | `google/gemini-3.1-pro-preview` | Coverage analysis |
 | Embeddings | `qwen/qwen3-embedding-8b` | 4096-dim vectors for semantic search |
+| Autocomplete | `x-ai/grok-4.1-fast` | Instant title suggestions |
+| Rerank | `openai/gpt-5-nano` | Re-ranks RAG results by relevance |
 
 ### AllKnower API routes
 
@@ -329,7 +331,7 @@ RAG keeps LanceDB in sync with AllCodex so semantic search works.
    a. Fetches HTML content from AllCodex via ETAPI.
    b. Strips HTML tags to plain text.
    c. Chunks the text (splits into smaller segments).
-   d. Embeds each chunk via `qwen/qwen3-embedding-8b` through OpenRouter (1536-dim vectors).
+   d. Embeds each chunk via `qwen/qwen3-embedding-8b` through OpenRouter (4096-dim vectors).
    e. Upserts into LanceDB: deletes old chunks for that noteId, inserts new ones.
    f. Updates `rag_index_meta` in PostgreSQL (noteId, noteTitle, chunkCount, model, timestamp).
 
@@ -363,7 +365,7 @@ AllCodex can publish notes as public web pages (no auth required).
    - Code blocks get syntax highlighting.
    - Mermaid diagrams are rendered as images.
    - Include notes (`<section class="include-note">`) are expanded inline.
-4. The result is rendered through an EJS template (`packages/share-theme/`) with navigation, dark/light mode toggle, and customizable CSS/JS.
+4. The result is rendered through an EJS template with navigation, dark/light mode toggle, and customizable CSS/JS.
 
 ---
 
@@ -526,22 +528,25 @@ Scalar interactive docs at `/docs`. OpenAPI JSON at `/etapi/openapi.json` (CORS-
 
 ```
 src/
-  index.ts              Elysia app entrypoint, route registration
+  index.ts              App bootstrap entry point
+  app.ts                Elysia app instance, route registration
   env.ts                Zod-validated environment variables
   auth/index.ts         better-auth setup (email/password, Bearer)
   db/client.ts          Prisma client with pretty-printed query logging
   etapi/client.ts       AllCodex ETAPI wrapper (createNote, tagNote, etc.)
   pipeline/
     brain-dump.ts       Main orchestrator (RAG -> LLM -> parse -> ETAPI)
+    model-router.ts     Per-task model selection with OpenRouter fallbacks
     prompt.ts           System/user prompt builders + callLLM()
     parser.ts           Zod parser for LLM JSON responses
+    relations.ts        Relationship suggestion pipeline logic
   plugins/
     index.ts            CORS, rate limiting, background jobs
     auth-guard.ts       Session-based auth middleware
   rag/
-    embedder.ts         OpenRouter embedding calls (gemini-embedding-001)
+    embedder.ts         OpenRouter embedding calls (qwen/qwen3-embedding-8b, 4096-dim)
     lancedb.ts          Vector store (connect, upsert, query, delete)
-    indexer.ts           Sync AllCodex -> LanceDB
+    indexer.ts          Sync AllCodex -> LanceDB
   routes/
     brain-dump.ts       POST /brain-dump, GET /brain-dump/history
     rag.ts              POST /rag/query, /rag/reindex, GET /rag/status
@@ -710,12 +715,12 @@ graph TB
     end
 
     subgraph ExternalAPIs["External Services"]
-        OpenRouter["OpenRouter API<br/>LLM: minimax-m2.5, kimi-k2.5, gpt-5-nano, gemini-3.1<br/>Embed: qwen3-embedding-8b"]
+        OpenRouter["OpenRouter API<br/>LLM: mimo-v2-pro, claude-sonnet-4.6, gemini-3-flash, grok-4.1-fast<br/>Embed: qwen3-embedding-8b (4096-dim)"]
     end
 
     subgraph Storage["AllKnower Storage"]
         Postgres["PostgreSQL<br/>users | sessions | brain_dump_history<br/>rag_index_meta | app_config"]
-        LanceDB["LanceDB<br/>lore_embeddings<br/>(3072-dim vectors)"]
+        LanceDB["LanceDB<br/>lore_embeddings<br/>(4096-dim vectors)"]
     end
 
     Browser <--> Pages
