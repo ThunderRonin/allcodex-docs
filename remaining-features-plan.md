@@ -1,105 +1,18 @@
 # AllKnower: Remaining Features
 
-Three features left to implement: relation writing, auto-apply, and Azgaar import.
+**Status as of 2026-03-29:** One feature remaining — Azgaar map import. Features 1 (relation writing) and 2 (auto-apply relations) are fully shipped.
 
 ---
 
-## Feature 1: Relation Writing Back to AllCodex
+## ✅ Feature 1: Relation Writing Back to AllCodex — **SHIPPED**
 
-**What:** `POST /suggest/relationships` returns JSON suggestions but never writes anything to AllCodex. We need an endpoint that persists approved suggestions as Trilium `relation` attributes.
-
-**Why:** Without this, suggestions are read-only. The user has to manually create relation links in AllCodex, which defeats the point.
-
-### Route
-
-```
-POST /suggest/relationships/apply
-```
-
-### Request Body
-
-```json
-{
-  "sourceNoteId": "abc123",
-  "relations": [
-    {
-      "targetNoteId": "def456",
-      "relationshipType": "ally",
-      "description": "Fought together at the Battle of Halitusech"
-    }
-  ]
-}
-```
-
-### Implementation Steps
-
-- [x] **1a.** Add `createRelation` helper to `src/etapi/client.ts` — wraps `createAttribute` with `type: "relation"` and applies a naming convention (e.g. `relAlly`, `relEnemy`, `relFamily`, `relLocation`, `relEvent`, `relFaction`, `relOther`). Also writes the description as a `#relationNote` label on the source note for context.
-
-- [x] **1b.** Create `POST /suggest/relationships/apply` in `src/routes/suggest.ts`:
-  1. Validate body (sourceNoteId + array of relations)
-  2. For each relation, call `createRelation(sourceNoteId, targetNoteId, relationshipType)` via ETAPI
-  3. Optionally create the inverse relation on the target note (e.g. if A is `relAlly` of B, then B gets `relAlly` of A). Bidirectional by default, controlled by a `bidirectional: boolean` body param (default `true`)
-  4. Return `{ applied: [...], failed: [...] }`
-
-- [x] **1c.** Add Zod validation schemas to `src/types/lore.ts`:
-  - `RelationshipTypeSchema` — enum of `ally | enemy | family | location | event | faction | other`
-  - `ApplyRelationBodySchema` — the request body shape
-
-- [x] **1d.** Add a `relation_history` table to Prisma schema to log applied relations (sourceNoteId, targetNoteId, type, description, createdAt). This enables undo and audit.
-
-### Files Touched
-
-| File | Change |
-|---|---|
-| `src/etapi/client.ts` | Add `createRelation()` helper |
-| `src/routes/suggest.ts` | Add `POST /relationships/apply` |
-| `src/types/lore.ts` | Add schemas |
-| `prisma/schema.prisma` | Add `RelationHistory` model |
+`POST /suggest/relationships/apply` persists approved suggestions as AllCodex `relation` attributes (bidirectional by default). Applied relations are logged to `relation_history`. Implemented in `src/routes/suggest.ts` + `src/etapi/client.ts`.
 
 ---
 
-## Feature 2: Auto-Applying Suggested Relations
+## ✅ Feature 2: Auto-Applying Suggested Relations — **SHIPPED**
 
-**What:** After brain dump creates new notes, automatically run the relationship suggester and apply high-confidence results without user intervention.
-
-**Why:** Right now the user has to manually call `/suggest/relationships` after every brain dump, then separately call `/apply`. Auto-apply closes the loop so brain dump, note creation, and relation linking all happen in one request.
-
-### Implementation Steps
-
-- [x] **2a.** Extract the relationship suggestion logic from the route handler into a standalone function in a new file `src/pipeline/relations.ts`:
-  ```ts
-  async function suggestRelationsForNote(noteId: string, noteContent: string): Promise<Suggestion[]>
-  ```
-
-- [x] **2b.** Add a `applyRelations(sourceNoteId: string, relations: Suggestion[])` function in the same file that calls the ETAPI `createRelation` helper from Feature 1.
-
-- [x] **2c.** Modify the brain dump pipeline (`src/pipeline/brain-dump.ts`):
-  - After the note creation loop finishes, for each newly created note:
-    1. Call `suggestRelationsForNote(noteId, content)`
-    2. Filter suggestions to only high-confidence ones (LLM returns a `confidence` field — add this to the prompt)
-    3. Call `applyRelations(noteId, highConfidenceSuggestions)`
-  - Wrap in try/catch so a relation failure never breaks the brain dump
-  - Add the applied relations to the `BrainDumpResult` response (new `relations` field)
-
-- [x] **2d.** Update the relationship suggestion LLM prompt to include a `confidence: "high" | "medium" | "low"` field per suggestion. Only auto-apply `"high"` confidence. Medium/low are returned to the user for manual review.
-
-- [x] **2e.** Add an `autoRelate: boolean` field to the brain dump request body (default `true`). Lets the user opt out of auto-relation per request.
-
-- [x] **2f.** Add `relations` array to `BrainDumpResultSchema` in `src/types/lore.ts`.
-
-### Files Touched
-
-| File | Change |
-|---|---|
-| `src/pipeline/relations.ts` | New file — `suggestRelationsForNote()` + `applyRelations()` |
-| `src/pipeline/brain-dump.ts` | Call auto-relate after note creation |
-| `src/pipeline/prompt.ts` | Update suggestion prompt to include confidence |
-| `src/routes/suggest.ts` | Refactor — delegate to shared `relations.ts` |
-| `src/types/lore.ts` | Add `confidence` to suggestion schema, `relations` to result |
-
-### Sequencing
-
-Feature 2 depends on Feature 1 (`createRelation` helper), so implement Feature 1 first.
+Brain dump pipeline (`src/pipeline/brain-dump.ts`) now calls `suggestRelationsForNote()` and `applyRelations()` from `src/pipeline/relations.ts` after each note is created. High-confidence suggestions are auto-applied. Medium/low are returned for manual review. Controlled by `autoRelate: boolean` request param (default `true`).
 
 ---
 
@@ -205,26 +118,21 @@ Body: file (the .json export from Azgaar FMG)
 
 ## Implementation Order
 
-```
-Feature 1: Relation writing      (no dependencies)
-    ↓
-Feature 2: Auto-apply relations   (depends on Feature 1)
+Features 1 and 2 are complete. Only Feature 3 (Azgaar import) remains.
 
-Feature 3: Azgaar import          (no dependencies — can parallel with 1 & 2)
 ```
-
-Recommended sequence: **1 -> 3 -> 2**. Get relation writing and Azgaar import working independently first, then wire up auto-apply last since it pulls the relation logic into the brain dump pipeline.
+Feature 3: Azgaar import    (no dependencies — standalone)
+```
 
 ---
 
 ## Prisma Migrations
 
-All three features add new models. Run a single migration after all schema changes are in:
+Feature 3 adds one new model. Run after all schema changes:
 
 ```bash
-bunx prisma migrate dev --name "add-relation-history-and-import-history"
+bunx prisma migrate dev --name "add-import-history"
 ```
 
-New models:
-- `RelationHistory` for logging applied relations (Feature 1)
+New model:
 - `ImportHistory` for logging Azgaar imports (Feature 3)

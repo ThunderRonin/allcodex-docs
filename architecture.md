@@ -153,17 +153,19 @@ AllKnower uses two databases:
 
 ### Models used
 
-All LLM and embedding calls go through OpenRouter:
+All LLM and embedding calls go through OpenRouter. Each task has a configurable primary model plus up to two fallbacks (all env-overridable). OpenRouter handles failover server-side with a single HTTP request.
 
-| Task | Model | Purpose |
+| Task | Default Model | Purpose |
 |---|---|---|
-| Brain Dump | `xiaomi/mimo-v2-pro` | Entity extraction from raw text |
-| Consistency Check | `anthropic/claude-sonnet-4.6` | Contradiction detection |
-| Relationship Suggestions | `google/gemini-3-flash-preview` | Connection proposals |
-| Gap Detection | `google/gemini-3.1-pro-preview` | Coverage analysis |
+| Brain Dump | `x-ai/grok-4.1-fast` | Entity extraction from raw text |
+| Consistency Check | `moonshotai/kimi-k2.5` | RAG-augmented contradiction detection |
+| Relationship Suggestions | `aion-labs/aion-2.0` | Connection proposals |
+| Gap Detection | `aion-labs/aion-2.0` | Coverage analysis |
 | Embeddings | `qwen/qwen3-embedding-8b` | 4096-dim vectors for semantic search |
-| Autocomplete | `x-ai/grok-4.1-fast` | Instant title suggestions |
+| Autocomplete | `liquid/lfm-24b` | Instant title suggestions |
 | Rerank | `openai/gpt-5-nano` | Re-ranks RAG results by relevance |
+
+> **Note:** All model defaults can be overridden in `.env` via `BRAIN_DUMP_MODEL`, `CONSISTENCY_MODEL`, `SUGGEST_MODEL`, `GAP_DETECT_MODEL`, `AUTOCOMPLETE_MODEL`, `RERANK_MODEL` (each with `_FALLBACK_1` / `_FALLBACK_2` variants). Setting `USE_OPENROUTER_AUTO=true` routes all tasks through `openrouter/auto`.
 
 ### AllKnower API routes
 
@@ -174,17 +176,21 @@ All LLM and embedding calls go through OpenRouter:
 | `POST` | `/rag/query` | Semantic similarity search |
 | `POST` | `/rag/reindex/:noteId` | Reindex one note |
 | `POST` | `/rag/reindex` | Full corpus reindex |
-| `GET` | `/rag/status` | Index stats |
-| `POST` | `/consistency/check` | Run consistency scan |
-| `POST` | `/suggest/relationships` | Suggest connections |
-| `GET` | `/suggest/gaps` | Detect lore gaps |
-| `GET` | `/suggest/autocomplete?q=...` | Title autocomplete |
+| `POST` | `/rag/reindex-stale` | Reindex only notes changed since last embedding |
+| `GET` | `/rag/status` | Index stats (count + last indexed) |
+| `POST` | `/consistency/check` | RAG-augmented consistency scan |
+| `POST` | `/suggest/relationships` | Suggest narrative connections |
+| `POST` | `/suggest/relationships/apply` | Persist approved suggestions as AllCodex relation attributes |
+| `GET` | `/suggest/gaps` | Detect underdeveloped lore areas |
+| `GET` | `/suggest/autocomplete?q=...` | Title autocomplete (3-phase: prefix → RAG → LLM) |
 | `POST` | `/setup/seed-templates` | Create lore templates in AllCodex |
 | `GET` | `/health` | Service health (AllCodex, Postgres, LanceDB) |
 | `POST` | `/api/auth/sign-up/email` | Register a new AllKnower account |
 | `POST` | `/api/auth/sign-in/email` | Login and receive a bearer token |
 | `POST` | `/api/auth/sign-out` | Invalidate the current session |
 | `GET` | `/api/auth/session` | Verify session and retrieve user info |
+
+Interactive API docs (Scalar UI) are served at `/reference`. OpenAPI spec at `/reference/json`.
 
 Auth: better-auth (email/password + Bearer token). All AI routes require `Authorization: Bearer <token>`. The Portal collects credentials and proxies auth calls server-side — no HTML login pages are served by AllKnower.
 
@@ -221,7 +227,7 @@ A Next.js 16 app with React 19. It is the only thing the user interacts with. Th
 | `/search` | Search | Dual-mode: Semantic (RAG via AllKnower) or Attribute (ETAPI query via AllCodex) |
 | `/ai/consistency` | Consistency | Optional note IDs input. Runs scan, shows issues by severity |
 | `/ai/gaps` | Gap Detector | One-click scan. Shows gaps grouped by severity with suggestions |
-| `/ai/relationships` | Relationships | Text input. Shows suggested connections with type badges |
+| `/ai/relationships` | Relationships | Text input (auto-populated with note content when opened from a note detail page via `?noteId=`). Shows suggested connections with type and confidence badges |
 | `/settings` | Settings | Two cards: AllCodex connection (token or password) + AllKnower connection (token or sign-in) |
 
 ### How the Portal talks to backends
@@ -297,17 +303,19 @@ This is the core feature. The user pastes raw worldbuilding text and gets struct
 
 1. User optionally enters note IDs, clicks "Run".
 2. Portal calls `POST /api/ai/consistency` -> AllKnower `POST /consistency/check`.
-3. AllKnower fetches up to 30 lore notes from AllCodex via ETAPI, strips HTML to plain text.
-4. Sends all summaries to `moonshotai/kimi-k2.5` with a system prompt asking for contradictions, timeline conflicts, orphaned references, and naming issues.
-5. Returns `{ issues[], summary }` with severity and affected note IDs.
+3. **Explicit mode** (note IDs provided): AllKnower fetches those notes from AllCodex, strips HTML to plain text, sends full content to the LLM.
+4. **Semantic sampling mode** (no note IDs): AllKnower runs 4 semantic RAG probes (`characters/relationships`, `world rules/magic`, `timeline/events`, `contradictions/anomalies`) to surface the most consistency-relevant lore entries. Up to 2,000 chars per note are included.
+5. Sends sampled notes to `moonshotai/kimi-k2.5` with a system prompt asking for contradictions, timeline conflicts, orphaned references, and naming issues.
+6. Returns `{ issues[], summary }` with severity and affected note IDs.
 
 ### Relationship Suggestions
 
-1. User enters text (or clicks "Suggest Connections" from a note detail page).
+1. User enters text (or navigates from a note detail page — the portal fetches and strips the note's HTML content automatically).
 2. Portal calls `POST /api/ai/relationships` -> AllKnower `POST /suggest/relationships`.
-3. AllKnower queries LanceDB for the 15 most similar lore chunks.
-4. Sends the text + context to Grok with a prompt asking for plausible narrative connections.
-5. Returns `{ suggestions[] }` with target note IDs, relationship types, and descriptions.
+3. AllKnower queries LanceDB for the 15 most similar lore chunks (cosine metric, hybrid reranking).
+4. Sends the text + context to the suggest model asking for plausible narrative connections.
+5. Returns `{ suggestions[] }` with target note IDs, relationship types, confidence, and descriptions.
+6. User can then call `POST /suggest/relationships/apply` to persist approved suggestions as AllCodex `relation` attributes (bidirectional by default). Each applied relation is logged to `relation_history`.
 
 ### Gap Detection
 
@@ -346,8 +354,17 @@ RAG keeps LanceDB in sync with AllCodex so semantic search works.
 
 1. Any part of the system that needs similar lore calls `queryLore(text, topK)`.
 2. The query text is embedded into a vector.
-3. LanceDB performs approximate nearest neighbor search against all stored chunk vectors.
-4. Returns chunks ranked by cosine similarity, with noteId, noteTitle, content, and score.
+3. LanceDB performs ANN search with explicit cosine distance metric.
+4. A base threshold of 0.3 similarity filters out low-quality matches.
+5. **Hybrid reranking** is applied based on query complexity:
+   - Simple queries (≤8 words, no relational connectives) → Xenova cross-encoder (local, fast)
+   - Complex queries (>8 words or contains how/why/between/etc.) → LLM-as-a-Judge
+6. Results are deduplicated per note (highest-scoring chunk wins), then sliced to `topK`.
+7. Returns chunks ranked by score, with noteId, noteTitle, content, and score.
+
+### Stale reindex
+
+`POST /rag/reindex-stale` compares each lore note's `utcDateModified` in AllCodex against its `embeddedAt` timestamp in `rag_index_meta`. Only notes modified since last embedding are reprocessed — safe to run on a schedule.
 
 ---
 
@@ -520,6 +537,8 @@ Multiple `#worldVariables` notes are merged. Values are HTML-escaped.
 
 Scalar interactive docs at `/docs`. OpenAPI JSON at `/etapi/openapi.json` (CORS-open for LLM/AI agents).
 
+> **AllKnower** serves its own interactive docs at `/reference` (Scalar UI via `@elysiajs/openapi`).
+
 ---
 
 ## 13. AllKnower Internals
@@ -566,9 +585,11 @@ src/
 | `sessions` | Login sessions with expiry |
 | `accounts` | OAuth providers |
 | `verifications` | Email verification tokens |
-| `brain_dump_history` | Log of every brain dump (raw text, parsed JSON, model, tokens) |
-| `rag_index_meta` | Tracks which notes are indexed (noteId, title, chunk count, model) |
+| `brain_dump_history` | Log of every brain dump (raw text, `rawTextHash` for idempotency dedup, parsed JSON, created/updated note ID arrays, model, token count) |
+| `llm_call_log` | Append-only log of every LLM call (task, model, tokens, latencyMs, requestId) |
+| `rag_index_meta` | Tracks which notes are indexed (noteId, title, chunk count, model, embeddedAt) |
 | `app_config` | Key-value store for runtime settings (loreRootNoteId, etc.) |
+| `relation_history` | Log of applied relation suggestions (sourceNoteId, targetNoteId, type, description) |
 
 ### LanceDB schema
 
