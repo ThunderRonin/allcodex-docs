@@ -209,7 +209,7 @@ A Next.js 16 app with React 19. It is the only thing the user interacts with. Th
 | Framework | Next.js 16 (App Router) |
 | React | 19 with React Compiler |
 | Data fetching | TanStack Query (30s stale time, 1 retry) |
-| State | `useState` for component state; Zustand is installed but not actively used |
+| State | `useState` for ephemeral component state; **Zustand** for shared AI tool state (`useAIToolsStore`) and brain dump state (`useBrainDumpStore`) |
 | UI components | shadcn/ui (Radix primitives + Tailwind) |
 | Editor | Novel v1 (`LoreEditor`) — Novel-wrapped Tiptap with slash commands, bubble menu, `@`-mentions, tables, images |
 | Dark theme | Cinzel (headings) + Crimson Text (body) fonts |
@@ -222,13 +222,13 @@ A Next.js 16 app with React 19. It is the only thing the user interacts with. Th
 | `/` | Dashboard | Stat cards, recent entries grid, quick actions, system status |
 | `/lore` | Lore Browser | Two-panel layout: `LoreTree` sidebar (type-category filter with counts) + filterable card grid. |
 | `/lore/new` | New Entry | `TemplatePicker` modal to select a lore type, then title + `LoreEditor` (Novel/Tiptap) + `PromotedFields` for template-specific attributes. |
-| `/lore/[id]` | Note Detail | Two-column: rendered content + sidebar with labels, relations, and "Suggest Connections" button. |
+| `/lore/[id]` | Note Detail | Two-column: rendered content + sidebar with labels, relations, `RelationshipGraph` (on-demand Mermaid diagram of existing + AI-suggested connections with per-suggestion Apply buttons), and "Suggest Connections" button. |
 | `/lore/[id]/edit` | Edit Note | Title, `TemplatePicker` (template switcher), `LoreEditor` (Novel/Tiptap rich text), `PromotedFields`, draft toggle (`#draft` label), delete with confirmation. |
-| `/brain-dump` | Brain Dump | Textarea for raw text. Shows results (created/updated entities) + history |
+| `/brain-dump` | Brain Dump | Textarea for raw text. Shows results (created/updated entities) + history. State managed by `useBrainDumpStore`. |
 | `/search` | Search | Dual-mode: Semantic (RAG via AllKnower) or Attribute (ETAPI query via AllCodex) |
-| `/ai/consistency` | Consistency | Optional note IDs input. Runs scan, shows issues by severity |
-| `/ai/gaps` | Gap Detector | One-click scan. Shows gaps grouped by severity with suggestions |
-| `/ai/relationships` | Relationships | Text input (auto-populated with note content when opened from a note detail page via `?noteId=`). Shows suggested connections with type and confidence badges |
+| `/ai/consistency` | Consistency | Optional note IDs input. Runs scan, shows issues by severity. State managed by `useAIToolsStore`. |
+| `/ai/gaps` | Gap Detector | One-click scan. Shows gaps grouped by severity with suggestions. State managed by `useAIToolsStore`. |
+| `/ai/relationships` | Relationships | Text input (auto-populated with note content when opened from a note detail page via `?noteId=`). Passes `noteId` to AllKnower to filter self-referential suggestions. Each suggestion has an Apply button that persists the relation bidirectionally. State managed by `useAIToolsStore`. |
 | `/settings` | Settings | Two cards: AllCodex connection (token or password) + AllKnower connection (token or sign-in) |
 
 ### How the Portal talks to backends
@@ -312,11 +312,15 @@ This is the core feature. The user pastes raw worldbuilding text and gets struct
 ### Relationship Suggestions
 
 1. User enters text (or navigates from a note detail page — the portal fetches and strips the note's HTML content automatically).
-2. Portal calls `POST /api/ai/relationships` -> AllKnower `POST /suggest/relationships`.
+2. Portal calls `POST /api/ai/relationships { text, noteId? }` -> AllKnower `POST /suggest/relationships`.
+   - `noteId` is passed when known so AllKnower can label the prompt context correctly and filter out self-referential suggestions (where `targetNoteId === noteId`).
 3. AllKnower queries LanceDB for the 15 most similar lore chunks (cosine metric, hybrid reranking).
 4. Sends the text + context to the suggest model asking for plausible narrative connections.
 5. Returns `{ suggestions[] }` with target note IDs, relationship types, confidence, and descriptions.
-6. User can then call `POST /suggest/relationships/apply` to persist approved suggestions as AllCodex `relation` attributes (bidirectional by default). Each applied relation is logged to `relation_history`.
+6. Apply is available in two places:
+   - **`RelationshipGraph` sidebar** on `/lore/[id]`: shows existing relations + AI suggestions as a Mermaid graph. Each suggestion has an Apply button that calls `PUT /api/ai/relationships`.
+   - **`/ai/relationships` page**: each suggestion card has an Apply button (only when `noteId` is present in the URL).
+7. Apply calls `PUT /api/ai/relationships { sourceNoteId, relations[], bidirectional }` -> AllKnower `POST /suggest/relationships/apply`. Each applied relation is logged to `relation_history`. Applied suggestions show a green checkmark in the UI.
 
 ### Gap Detection
 
@@ -500,7 +504,7 @@ Changes made to the Trilium fork for AllCodex Core:
 
 ### Lore Templates (hidden_subtree_templates.ts)
 
-8 templates added under a "Lore Templates" book note:
+12 templates added under a "Lore Templates" book note:
 
 | Template | ID | Icon | Key Promoted Attributes |
 |---|---|---|---|
@@ -512,6 +516,12 @@ Changes made to the Trilium fork for AllCodex Core:
 | Timeline | `_template_timeline` | `bx-time-five` | calendarSystem (book type, sorted by inWorldDate) |
 | Manuscript | `_template_manuscript` | `bx-book-open` | genre, manuscriptStatus, wordCount |
 | Statblock | `_template_statblock` | `bx-list-check` | crName, crLevel, ac, hp, str-cha stats, abilities |
+| Item / Artifact | `_template_item` | `bx-diamond` | itemType, rarity, creator, magicProperties, history |
+| Spell / Magic | `_template_spell` | `bx-meteor` | school, level, castingTime, range, components, duration |
+| Building / Structure | `_template_building` | `bx-building-house` | buildingType, owner, purpose, condition, secrets |
+| Language / Script | `_template_language` | `bx-font-family` | languageFamily, speakers, script, samplePhrase |
+
+> **Template parity gap**: AllKnower defines 18 entity types. 6 types have no AllCodex Core template or Portal TemplatePicker entry yet: organization, race, myth, cosmology, deity, religion. Brain dumps can still create notes of these types (AllKnower seeds templates via `POST /setup/seed-templates`), but the Portal's create/edit UI won't offer them in the picker until they're added to `TemplatePicker.tsx`.
 
 Each template carries the `#template` label and defines promoted attributes using Trilium's `label:fieldName = "promoted,alias=Display Name,single,text"` syntax. When a note's `~template` relation points to one of these, Trilium renders the promoted fields as a structured form.
 
@@ -560,6 +570,14 @@ src/
     prompt.ts           System/user prompt builders + callLLM()
     parser.ts           Zod parser for LLM JSON responses
     relations.ts        Relationship suggestion pipeline logic
+    prompts/
+      autocomplete.ts   System prompt for title autocomplete suggestions
+      consistency.ts    System prompt for continuity editor
+      gap-detect.ts     System prompt for worldbuilding gap analysis
+      suggest.ts        System prompt for relationship suggestion
+    schemas/
+      llm-response-schemas.ts   JSON Schema objects for OpenRouter structured output
+      response-schemas.ts       Zod validation for suggestion/consistency/gap responses
   plugins/
     index.ts            CORS, rate limiting, background jobs
     auth-guard.ts       Session-based auth middleware
@@ -575,7 +593,7 @@ src/
     health.ts           GET /health (deep check: AllCodex Core + Postgres + LanceDB)
     setup.ts            POST /setup/seed-templates
   types/
-    lore.ts             Zod schemas (8 entity types, brain dump result, etc.)
+    lore.ts             Zod schemas (18 entity types, 17 relationship types, brain dump result, etc.)
 ```
 
 ### Database schema (PostgreSQL via Prisma)
@@ -617,41 +635,84 @@ app/
   (portal)/
     layout.tsx            Sidebar + header shell
     page.tsx              Dashboard (stats, recent entries, quick actions)
-    brain-dump/page.tsx   Brain dump textarea + history
+    brain-dump/page.tsx   Brain dump textarea + history (state: useBrainDumpStore)
     lore/page.tsx         Filterable card grid
     lore/new/page.tsx     TemplatePicker -> LoreEditor + PromotedFields (create flow)
-    lore/[id]/page.tsx    Detail view (content + sidebar metadata)
+    lore/[id]/page.tsx    Detail view (content + sidebar) + RelationshipGraph
     lore/[id]/edit/       Edit title + LoreEditor (Tiptap) + TemplatePicker + PromotedFields + draft toggle
     search/page.tsx       Dual-mode: semantic (RAG) or attribute (ETAPI)
-    ai/consistency/       Consistency checker UI
-    ai/gaps/              Gap detector UI
-    ai/relationships/     Relationship suggester UI
+    ai/consistency/       Consistency checker UI (state: useAIToolsStore)
+    ai/gaps/              Gap detector UI (state: useAIToolsStore)
+    ai/relationships/     Relationship suggester + apply UI (state: useAIToolsStore)
     settings/page.tsx     Service connection management
   api/
-    lore/route.ts         CRUD proxy to AllCodex ETAPI
-    brain-dump/route.ts   Proxy to AllKnower brain dump
-    ai/*/route.ts         Proxy to AllKnower AI endpoints
-    search/route.ts       Dual-mode search proxy
-    rag/route.ts          Proxy to AllKnower RAG query
-    config/               Credential storage/retrieval (cookies)
+    lore/route.ts             CRUD proxy to AllCodex ETAPI
+    lore/[id]/attributes/     Create/delete label + relation attributes
+    lore/[id]/content/        Read/write HTML note body
+    lore/[id]/image/          Proxy image blobs for editor display
+    lore/[id]/relationships/  AI relationship suggestions + existing relations for a specific note
+    lore/autolink/            Scan note text for unlinked title matches
+    lore/mention-search/      @-mention autocomplete (search by title prefix)
+    lore/move/                Move a note to a different parent branch
+    lore/upload-image/        Upload image to AllCodex, return noteId
+    brain-dump/route.ts       Proxy to AllKnower brain dump
+    brain-dump/history/route.ts  Proxy to AllKnower brain dump history
+    auth/sync/route.ts        Token cookie sync after AllKnower login
+    ai/*/route.ts             Proxy to AllKnower AI endpoints (POST suggest, PUT apply)
+    search/route.ts           Dual-mode search proxy
+    rag/route.ts              Proxy to AllKnower RAG query
+    config/                   Credential storage/retrieval (cookies)
 
 lib/
-  etapi-server.ts         Server-side AllCodex ETAPI client
-  allknower-server.ts     Server-side AllKnower API client
+  etapi-server.ts         Server-side AllCodex ETAPI client (notes, attributes, branches, search — 16 functions)
+  allknower-server.ts     Server-side AllKnower API client (suggestRelationships, applyRelationships, etc.)
   get-creds.ts            Reads credentials from cookies or env vars
   route-error.ts          Error handling (ServiceError class)
+  stores/
+    ai-tools-store.ts     Zustand store for consistency / gaps / relationships page state
+    brain-dump-store.ts   Zustand store for brain dump draft text (persisted to localStorage), result display, and expanded row state
 
 components/
-  portal/AppSidebar.tsx   Navigation (Chronicle, Studio, AI Tools, System)
-  portal/LoreTree.tsx     Type-category sidebar (counts notes per loreType, drives grid filter)
-  portal/ServiceBanner.tsx Error/warning banners per service
-  providers.tsx           TanStack Query + Tooltip providers
-  editor/LoreEditor.tsx   Novel (Tiptap wrapper) rich text editor (slash commands, bubble menu, @-mentions, tables, images)
-  editor/TemplatePicker.tsx Template selection modal (8 lore types)
-  editor/PromotedFields.tsx Template-specific attribute form (fullName, race, etc.)
+  portal/AppSidebar.tsx       Navigation (Chronicle, Studio, AI Tools, System)
+  portal/LoreTree.tsx         Type-category sidebar (counts notes per loreType, drives grid filter)
+  portal/MermaidDiagram.tsx   Generic client-side Mermaid renderer (lazy-loaded, grimoire-themed)
+  portal/RelationshipGraph.tsx On-demand relationship diagram for any note (existing + AI suggestions + apply buttons)
+  portal/ServiceBanner.tsx    Error/warning banners per service
+  providers.tsx               TanStack Query + Tooltip providers
+  editor/LoreEditor.tsx       Novel (Tiptap wrapper) rich text editor (slash commands, bubble menu, @-mentions, tables, images)
+  editor/TemplatePicker.tsx   Template selection modal (12 types: 11 typed + General Lore)
+  editor/PromotedFields.tsx   Template-specific attribute form (fullName, race, etc.)
   editor/AutolinkerDialog.tsx Scans note text for unlinked title matches
-  ui/                     shadcn components (badge, button, card, dialog, etc.)
+  ui/                         shadcn components (badge, button, card, dialog, etc.)
 ```
+
+### Editor architecture
+
+The lore editor (`LoreEditor.tsx`) wraps [Novel](https://novel.sh/) (which wraps Tiptap) with a worldbuilding-focused extension chain:
+
+```
+Novel (LoreEditor.tsx)
+  └─ Tiptap
+       ├─ StarterKit (paragraphs, bold, italic, headings, lists, code, blockquote)
+       ├─ Highlight, TaskList/TaskItem, Table/TableRow/TableCell
+       ├─ Image (drag-drop + paste → /api/lore/upload-image → AllCodex image note)
+       ├─ Link (autolink enabled)
+       ├─ Placeholder ("Begin inscribing your lore…")
+       ├─ mentionExtension (@-mention → /api/lore/mention-search → internal link)
+       └─ slashCommand (/ menu: heading, bullets, numbered, quote, code, image, table, todo)
+```
+
+| File | Purpose |
+|---|---|
+| `editor/LoreEditor.tsx` | Main editor component. Configures Novel with extensions, bubble menu, slash command. Emits `onSave(html)` via debounced autosave. |
+| `editor/slash-command.tsx` | Slash command menu items and rendering (Cmdk-based popup) |
+| `editor/bubble-menu.tsx` | Floating toolbar on selection: bold, italic, strikethrough, link |
+| `editor/mention-extension.ts` | Tiptap `Mention` node that fetches `/api/lore/mention-search?q=` for autocomplete |
+| `editor/extensions.ts` | Assembles the Tiptap extension array |
+| `editor/image-upload.ts` | Handles image paste/drop, uploads to `/api/lore/upload-image`, returns URL |
+| `editor/TemplatePicker.tsx` | Modal for selecting lore type when creating/switching templates |
+| `editor/PromotedFields.tsx` | Dynamic form for template-specific attributes (fullName, race, etc.) |
+| `editor/AutolinkerDialog.tsx` | Scans HTML for entity title matches; offers batch-link insertion |
 
 ### Credential flow
 
@@ -703,7 +764,9 @@ graph TB
         EtapiClient["lib/etapi-server.ts"]
         AkClient["lib/allknower-server.ts"]
         CredStore["lib/get-creds.ts<br/>(HTTP-only cookies + env fallback)"]
+        Stores["Zustand Stores<br/>useAIToolsStore | useBrainDumpStore"]
 
+        Pages --> Stores
         Pages --> APIRoutes
         APIRoutes --> CredStore
         CredStore --> EtapiClient
@@ -713,7 +776,7 @@ graph TB
     subgraph AllKnower["AllKnower<br/>(Elysia / Bun)<br/>Port 3001"]
         direction TB
         AkRoutes["Routes<br/>brain-dump | rag | consistency<br/>suggest | health | setup"]
-        Pipeline["Pipeline<br/>brain-dump.ts | prompt.ts | parser.ts"]
+        Pipeline["Pipeline<br/>brain-dump.ts | prompt.ts | parser.ts<br/>relations.ts | model-router.ts"]
         RAG["RAG<br/>embedder.ts | lancedb.ts | indexer.ts"]
         AkETAPI["etapi/client.ts<br/>(AllCodex ETAPI calls)"]
         AkAuth["better-auth<br/>(sessions + Bearer)"]
@@ -732,7 +795,7 @@ graph TB
         Becca["Becca Cache<br/>(in-memory entity store)"]
         Shaca["Shaca Cache<br/>(share-only read cache)"]
         SQLite["SQLite Database<br/>notes | branches | attributes<br/>blobs | revisions | options"]
-        Templates["Lore Templates<br/>Character | Location | Faction<br/>Creature | Event | Timeline<br/>Manuscript | Statblock"]
+        Templates[\"Lore Templates (12 implemented, 6 planned)<br/>Character | Location | Faction | Creature<br/>Event | Timeline | Manuscript | Statblock<br/>Item | Spell | Building | Language\"]
 
         ETAPI --> Becca
         ShareRenderer --> Shaca
@@ -746,7 +809,7 @@ graph TB
     end
 
     subgraph Storage["AllKnower Storage"]
-        Postgres["PostgreSQL<br/>users | sessions | brain_dump_history<br/>rag_index_meta | app_config"]
+        Postgres["PostgreSQL<br/>users | sessions | brain_dump_history<br/>rag_index_meta | app_config<br/>llm_call_log | relation_history"]
         LanceDB["LanceDB<br/>lore_embeddings<br/>(4096-dim vectors)"]
     end
 
@@ -819,4 +882,60 @@ sequenceDiagram
     AK->>LLM: Embed chunks (qwen3-embedding-8b)
     LLM-->>AK: Vectors
     AK->>LDB: upsertNoteChunks()
+```
+
+### Relationship Suggestion + Apply
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Portal as AllCodex Portal
+    participant AK as AllKnower
+    participant LDB as LanceDB
+    participant LLM as OpenRouter (Suggest Model)
+    participant AC as AllCodex Core (ETAPI)
+
+    User->>Portal: View /lore/[id], expand RelationshipGraph
+    Portal->>AC: GET /notes/:id (metadata + attributes)
+    AC-->>Portal: Note with existing relation attributes
+    Portal->>AC: GET /notes/:id/content
+    AC-->>Portal: HTML body
+
+    Note over Portal: Strip HTML tags to plain text
+
+    Portal->>AK: POST /suggest/relationships {text, noteId}
+
+    Note over AK: Step 1: RAG Context
+    AK->>LDB: queryLore(text, 15)
+    LDB-->>AK: Similar lore chunks
+
+    Note over AK: Step 2: LLM Suggestion
+    AK->>LLM: Suggest prompt + RAG context + text
+    LLM-->>AK: JSON {suggestions[]}
+
+    Note over AK: Step 3: Filter
+    AK->>AK: Remove self-referential (targetNoteId = noteId)
+
+    AK-->>Portal: {suggestions[]}
+
+    Note over Portal: Resolve existing relation target titles
+    loop For each existing relation attribute
+        Portal->>AC: GET /notes/:targetId
+        AC-->>Portal: {title}
+    end
+
+    Portal-->>User: Mermaid graph (solid=existing, dashed=suggested) + Apply buttons
+
+    User->>Portal: Click Apply on a suggestion
+    Portal->>AK: POST /suggest/relationships/apply {sourceNoteId, relations[], bidirectional}
+
+    Note over AK: Create ETAPI relations
+    loop For each relation
+        AK->>AC: POST /attributes (source→target relation)
+        AK->>AC: POST /attributes (target→source inverse relation)
+    end
+    AK->>AK: prisma.relationHistory.create()
+
+    AK-->>Portal: {applied: count}
+    Portal-->>User: Green checkmark on applied suggestion
 ```
