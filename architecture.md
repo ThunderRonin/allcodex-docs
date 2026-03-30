@@ -1,13 +1,13 @@
-# AllCodex Ecosystem: Full Architecture Documentation
+# AllCodex: Full Architecture Documentation
 
-> A detailed breakdown of how AllCodex, AllKnower, and the AllCodex Portal work together to power the All Reach grimoire.
+> A detailed breakdown of how AllCodex Core, AllKnower, and the AllCodex Portal work together to power the All Reach grimoire.
 
 ---
 
 ## Table of Contents
 
 1. [System Overview](#1-system-overview)
-2. [AllCodex (The Database)](#2-allcodex-the-database)
+2. [AllCodex Core (The Database)](#2-allcodex-core-the-database)
 3. [AllKnower (The Brain)](#3-allknower-the-brain)
 4. [AllCodex Portal (The Interface)](#4-allcodex-portal-the-interface)
 5. [Data Flow: Brain Dump Pipeline](#5-data-flow-brain-dump-pipeline)
@@ -16,8 +16,8 @@
 8. [Data Flow: RAG Indexing](#8-data-flow-rag-indexing)
 9. [Data Flow: Public Share Pages](#9-data-flow-public-share-pages)
 10. [Authentication and Credentials](#10-authentication-and-credentials)
-11. [AllCodex Internals: How Trilium Works](#11-allcodex-internals-how-trilium-works)
-12. [AllCodex Customizations](#12-allcodex-customizations)
+11. [AllCodex Core Internals: How Trilium Works](#11-allcodex-core-internals-how-trilium-works)
+12. [AllCodex Core Customizations](#12-allcodex-core-customizations)
 13. [AllKnower Internals](#13-allknower-internals)
 14. [Portal Internals](#14-portal-internals)
 15. [Mermaid Diagram](#15-mermaid-diagram)
@@ -30,23 +30,23 @@ The ecosystem is three services:
 
 | Service | Repo | Stack | Port | Role |
 |---|---|---|---|---|
-| **AllCodex** | `AllCodex/` | Node.js, Express 5, SQLite, EJS | 8080 | Lore database. Stores every note, attribute, and relation. Serves ETAPI and public share pages. |
-| **AllKnower** | `AllKnower/` | Bun, Elysia, PostgreSQL, LanceDB | 3001 | AI orchestrator. Runs brain dumps, embeddings, consistency checks, relationship suggestions, gap detection. |
-| **AllCodex Portal** | `AllCodex-Portal/` | Next.js 16, React 19, TanStack Query, shadcn/ui | 3000 | Web frontend. The user never touches AllCodex or AllKnower directly; the Portal is the single interface. |
+| **AllCodex Core** | `allcodex-core/` | Node.js, Express 5, SQLite, EJS | 8080 | Lore database. Stores every note, attribute, and relation. Serves ETAPI and public share pages. |
+| **AllKnower** | `allknower/` | Bun, Elysia, PostgreSQL, LanceDB | 3001 | AI orchestrator. Runs brain dumps, embeddings, consistency checks, relationship suggestions, gap detection. |
+| **AllCodex Portal** | `allcodex-portal/` | Next.js 16, React 19, TanStack Query, shadcn/ui | 3000 | Web frontend. The user never touches AllCodex Core or AllKnower directly; the Portal is the single interface. |
 
 Communication is unidirectional for data writes:
 
 ```
-User -> Portal -> AllKnower -> AllCodex (for brain dumps)
-User -> Portal -> AllCodex   (for direct CRUD)
-User -> Portal -> AllKnower  (for AI analysis)
+User -> Portal -> AllKnower    -> AllCodex Core (for brain dumps)
+User -> Portal -> AllCodex Core  (for direct CRUD)
+User -> Portal -> AllKnower      (for AI analysis)
 ```
 
-AllCodex never calls AllKnower. AllKnower calls AllCodex (via ETAPI) to read and write notes. The Portal calls both backends through its own Next.js API routes (server-side only, never from the browser).
+AllCodex Core never calls AllKnower. AllKnower calls AllCodex Core (via ETAPI) to read and write notes. The Portal calls both backends through its own Next.js API routes (server-side only, never from the browser).
 
 ---
 
-## 2. AllCodex (The Database)
+## 2. AllCodex Core (The Database)
 
 ### What it is
 
@@ -89,7 +89,7 @@ Labels can be **promoted** (displayed as a structured form at the top of a note)
 
 ### ETAPI endpoints
 
-AllCodex exposes a REST API under `/etapi/`:
+AllCodex Core exposes a REST API under `/etapi/`:
 
 | Method | Path | Description |
 |---|---|---|
@@ -110,7 +110,7 @@ Interactive API docs are served at `/docs` (Scalar UI). The OpenAPI spec is at `
 
 ### Cache layers
 
-AllCodex has two in-memory caches:
+AllCodex Core has two in-memory caches:
 
 1. **Becca** (Backend Cache): the primary data layer. All notes, branches, attributes, and revisions are loaded into memory on startup. Every write goes to both SQLite and Becca. All reads come from Becca, never from disk. This is why AllCodex is fast even for large databases.
 
@@ -118,7 +118,7 @@ AllCodex has two in-memory caches:
 
 ### Search engine
 
-AllCodex search supports:
+AllCodex Core search supports:
 
 - Full-text: `"towers tolkien"` (quotes for phrases)
 - Label filters: `#loreType=character`, `#status=alive`
@@ -209,8 +209,9 @@ A Next.js 16 app with React 19. It is the only thing the user interacts with. Th
 | Framework | Next.js 16 (App Router) |
 | React | 19 with React Compiler |
 | Data fetching | TanStack Query (30s stale time, 1 retry) |
-| State | Zustand (minimal global state) |
+| State | `useState` for component state; Zustand is installed but not actively used |
 | UI components | shadcn/ui (Radix primitives + Tailwind) |
+| Editor | Novel v1 (`LoreEditor`) — Novel-wrapped Tiptap with slash commands, bubble menu, `@`-mentions, tables, images |
 | Dark theme | Cinzel (headings) + Crimson Text (body) fonts |
 | Drawer/sheets | Vaul |
 
@@ -219,10 +220,10 @@ A Next.js 16 app with React 19. It is the only thing the user interacts with. Th
 | Route | Page | Description |
 |---|---|---|
 | `/` | Dashboard | Stat cards, recent entries grid, quick actions, system status |
-| `/lore` | Lore Browser | Filterable grid of all lore entries. Tabs by type (Character, Location, Faction, etc.) |
-| `/lore/new` | New Entry | Title, type dropdown, optional parent, initial content |
-| `/lore/[id]` | Note Detail | Two-column: content + sidebar with labels and relations. "Suggest Connections" button. |
-| `/lore/[id]/edit` | Edit Note | Title, HTML content textarea, delete with confirmation |
+| `/lore` | Lore Browser | Two-panel layout: `LoreTree` sidebar (type-category filter with counts) + filterable card grid. |
+| `/lore/new` | New Entry | `TemplatePicker` modal to select a lore type, then title + `LoreEditor` (Novel/Tiptap) + `PromotedFields` for template-specific attributes. |
+| `/lore/[id]` | Note Detail | Two-column: rendered content + sidebar with labels, relations, and "Suggest Connections" button. |
+| `/lore/[id]/edit` | Edit Note | Title, `TemplatePicker` (template switcher), `LoreEditor` (Novel/Tiptap rich text), `PromotedFields`, draft toggle (`#draft` label), delete with confirmation. |
 | `/brain-dump` | Brain Dump | Textarea for raw text. Shows results (created/updated entities) + history |
 | `/search` | Search | Dual-mode: Semantic (RAG via AllKnower) or Attribute (ETAPI query via AllCodex) |
 | `/ai/consistency` | Consistency | Optional note IDs input. Runs scan, shows issues by severity |
@@ -388,9 +389,9 @@ AllCodex can publish notes as public web pages (no auth required).
 
 ## 10. Authentication and Credentials
 
-### AllCodex (ETAPI)
+### AllCodex Core (ETAPI)
 
-- Token-based auth. Create a token in AllCodex Options.
+- Token-based auth. Create a token in AllCodex Core Options.
 - The token is passed as `Authorization: <token>` on every ETAPI request.
 - Also supports HTTP Basic auth and password login.
 
@@ -407,7 +408,7 @@ AllCodex can publish notes as public web pages (no auth required).
 
 The Portal stores credentials in HTTP-only cookies so the browser never sees raw tokens:
 
-1. **Settings page**: user enters AllCodex URL + token (or password for auto-login).
+1. **Settings page**: user enters AllCodex Core URL + token (or password for auto-login).
 2. Portal calls `POST /api/config/connect` which sets `allcodex_url` and `allcodex_token` as HTTP-only cookies.
 3. For AllKnower: the Settings page shows the service status and two buttons — **Login** and **Register**. The user enters URL + email/password and clicks one.
 4. Portal calls `POST /api/config/allknower-login` or `POST /api/config/allknower-register` (Next.js API route, server-side).
@@ -450,7 +451,7 @@ Browser  POST /api/brain-dump  { text }
 
 ---
 
-## 11. AllCodex Internals: How Trilium Works
+## 11. AllCodex Core Internals: How Trilium Works
 
 ### Startup sequence
 
@@ -483,13 +484,13 @@ When ETAPI receives `POST /create-note`:
 
 ### The hidden subtree
 
-Trilium has a "hidden" note subtree for system notes (templates, search defaults, etc.). It's not visible in the regular tree but accessible by ID. AllCodex adds lore templates here under `_templates_lore`.
+Trilium has a "hidden" note subtree for system notes (templates, search defaults, etc.). It's not visible in the regular tree but accessible by ID. AllCodex Core adds lore templates here under `_templates_lore`.
 
 ---
 
-## 12. AllCodex Customizations
+## 12. AllCodex Core Customizations
 
-Changes made to the Trilium fork for AllCodex:
+Changes made to the Trilium fork for AllCodex Core:
 
 ### Branding
 
@@ -552,7 +553,7 @@ src/
   env.ts                Zod-validated environment variables
   auth/index.ts         better-auth setup (email/password, Bearer)
   db/client.ts          Prisma client with pretty-printed query logging
-  etapi/client.ts       AllCodex ETAPI wrapper (createNote, tagNote, etc.)
+  etapi/client.ts       AllCodex Core ETAPI wrapper (createNote, tagNote, etc.)
   pipeline/
     brain-dump.ts       Main orchestrator (RAG -> LLM -> parse -> ETAPI)
     model-router.ts     Per-task model selection with OpenRouter fallbacks
@@ -565,13 +566,13 @@ src/
   rag/
     embedder.ts         OpenRouter embedding calls (qwen/qwen3-embedding-8b, 4096-dim)
     lancedb.ts          Vector store (connect, upsert, query, delete)
-    indexer.ts          Sync AllCodex -> LanceDB
+    indexer.ts          Sync AllCodex Core -> LanceDB
   routes/
     brain-dump.ts       POST /brain-dump, GET /brain-dump/history
     rag.ts              POST /rag/query, /rag/reindex, GET /rag/status
     consistency.ts      POST /consistency/check
     suggest.ts          POST /suggest/relationships, GET /suggest/gaps, /suggest/autocomplete
-    health.ts           GET /health (deep check: AllCodex + Postgres + LanceDB)
+    health.ts           GET /health (deep check: AllCodex Core + Postgres + LanceDB)
     setup.ts            POST /setup/seed-templates
   types/
     lore.ts             Zod schemas (8 entity types, brain dump result, etc.)
@@ -618,9 +619,9 @@ app/
     page.tsx              Dashboard (stats, recent entries, quick actions)
     brain-dump/page.tsx   Brain dump textarea + history
     lore/page.tsx         Filterable card grid
-    lore/new/page.tsx     Create entry form
+    lore/new/page.tsx     TemplatePicker -> LoreEditor + PromotedFields (create flow)
     lore/[id]/page.tsx    Detail view (content + sidebar metadata)
-    lore/[id]/edit/       Edit title, content, delete
+    lore/[id]/edit/       Edit title + LoreEditor (Tiptap) + TemplatePicker + PromotedFields + draft toggle
     search/page.tsx       Dual-mode: semantic (RAG) or attribute (ETAPI)
     ai/consistency/       Consistency checker UI
     ai/gaps/              Gap detector UI
@@ -642,8 +643,13 @@ lib/
 
 components/
   portal/AppSidebar.tsx   Navigation (Chronicle, Studio, AI Tools, System)
+  portal/LoreTree.tsx     Type-category sidebar (counts notes per loreType, drives grid filter)
   portal/ServiceBanner.tsx Error/warning banners per service
   providers.tsx           TanStack Query + Tooltip providers
+  editor/LoreEditor.tsx   Novel (Tiptap wrapper) rich text editor (slash commands, bubble menu, @-mentions, tables, images)
+  editor/TemplatePicker.tsx Template selection modal (8 lore types)
+  editor/PromotedFields.tsx Template-specific attribute form (fullName, race, etc.)
+  editor/AutolinkerDialog.tsx Scans note text for unlinked title matches
   ui/                     shadcn components (badge, button, card, dialog, etc.)
 ```
 
@@ -719,7 +725,7 @@ graph TB
         RAG --> AkETAPI
     end
 
-    subgraph AllCodex["AllCodex<br/>(Express 5 / Node.js / SQLite)<br/>Port 8080"]
+    subgraph AllCodexCore["AllCodex Core<br/>(Express 5 / Node.js / SQLite)<br/>Port 8080"]
         direction TB
         ETAPI["ETAPI<br/>/etapi/*<br/>Notes | Attributes | Branches | Search"]
         ShareRenderer["Share Renderer<br/>/share/*<br/>gmOnly | variables | EJS"]
@@ -736,7 +742,7 @@ graph TB
     end
 
     subgraph ExternalAPIs["External Services"]
-        OpenRouter["OpenRouter API<br/>LLM: mimo-v2-pro, claude-sonnet-4.6, gemini-3-flash, grok-4.1-fast<br/>Embed: qwen3-embedding-8b (4096-dim)"]
+        OpenRouter["OpenRouter API<br/>Brain Dump: x-ai/grok-4.1-fast<br/>Consistency: moonshotai/kimi-k2.5<br/>Suggest/Gap: aion-labs/aion-2.0<br/>Autocomplete: liquid/lfm-24b | Rerank: openai/gpt-5-nano<br/>Embed: qwen/qwen3-embedding-8b (4096-dim)"]
     end
 
     subgraph Storage["AllKnower Storage"]
@@ -776,7 +782,7 @@ sequenceDiagram
     participant AK as AllKnower
     participant LDB as LanceDB
     participant LLM as OpenRouter (Grok)
-    participant AC as AllCodex (ETAPI)
+    participant AC as AllCodex Core (ETAPI)
 
     User->>Portal: Paste raw text, click Submit
     Portal->>AK: POST /brain-dump {rawText}
