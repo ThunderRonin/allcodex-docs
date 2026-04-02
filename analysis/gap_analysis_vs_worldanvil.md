@@ -51,9 +51,9 @@ Effort is rated: **S** (days), **M** (1–2 weeks), **L** (3+ weeks).
 |---|---|---|
 | Template browser | Visual menu with descriptions per template on hover | `TemplatePicker` modal with icon grid, description cards, and hover previews |
 | Template-specific prompts | Each template shows inspirational prompts ("5 Ws") | Promoted attributes rendered as a dedicated form section via `PromotedFields.tsx` |
-| Template count | 25+ specialized templates | 8 templates (Character, Location, Faction, Creature, Event, Timeline, Manuscript, Statblock) |
+| Template count | 25+ specialized templates | 15 templates (Character, Location, Faction, Creature, Event, Timeline, Manuscript, Statblock, Item/Artifact, Spell, Building, Language, Session, Quest, Scene) + 6 brain-dump-only types |
 
-**Status: ✅ Shipped.** `TemplatePicker.tsx` is the creation flow entry point. `PromotedFields.tsx` renders template-specific form fields. Additional templates (Item/Artifact, Spell, Building) remain potential additions.
+**Status: ✅ Shipped.** `TemplatePicker.tsx` is the creation flow entry point. `PromotedFields.tsx` renders template-specific form fields. 15 typed templates cover the core worldbuilding entity types; 6 AllKnower-only types (organization, race, myth, cosmology, deity, religion) can be brain-dumped but lack Portal create/edit UI.
 
 ---
 
@@ -94,27 +94,23 @@ Effort is rated: **S** (days), **M** (1–2 weeks), **L** (3+ weeks).
 
 ---
 
-### 7. Timelines (Visual Chronological View)
+### 7. Timelines (Visual Chronological View) ✅ Shipped
 
 | Aspect | World Anvil | AllCodex |
 |---|---|---|
-| Visual timeline | Interactive chronological view with event cards | Timeline template exists (`_template_timeline`) but no visualization in Portal |
+| Visual timeline | Interactive chronological view with event cards | `/timeline` page with chronological event list, in-world date display, and sort controls |
 
-**Why deferrable:** We have the data structure (timeline book notes sorted by `inWorldDate`). Building a visual timeline component is a self-contained `M` task that can ship independently.
-
-**Effort if pursued:** `M`
+**Status: ✅ Shipped.** The `/timeline` page renders events chronologically with in-world dates. Timeline template (`_template_timeline`) plus Event template (`_template_event`) provide the data structure.
 
 ---
 
-### 8. Public/Private Toggle (Granular Sharing)
+### 8. Public/Private Toggle (Granular Sharing) ✅ Shipped
 
 | Aspect | World Anvil | AllCodex |
 |---|---|---|
-| Per-article padlock | Public/Private toggle per article + per-user access | `#shareRoot` tree is public; `#gmOnly` hides notes; no per-user access granularity |
+| Per-article padlock | Public/Private toggle per article + per-user access | `ShareSettings.tsx` — per-note share toggle, password protection, GM vs. player preview via `PreviewToggle.tsx`. `/shared` browser lists all shared content. |
 
-**Why deferrable:** We have the basic public/private mechanic (`#gmOnly` + `#shareRoot`). Per-user access control is a significant auth feature that only matters once there's a user base. `#draft` (Essential #5) covers the immediate need.
-
-**Effort if pursued:** `L`
+**Status: ✅ Shipped.** `ShareSettings` manages share visibility per note. `PreviewToggle` lets the GM switch between GM and player views. The `/shared` page browses all shared content with toggle controls. Per-user access control (individual player permissions) remains a future enhancement.
 
 ---
 
@@ -146,7 +142,7 @@ Effort is rated: **S** (days), **M** (1–2 weeks), **L** (3+ weeks).
 
 | World Anvil Feature | Why Skip |
 |---|---|
-| **RPG Campaigns** (session tools, encounter builders) | Out of scope. AllCodex is a lore system, not a VTT. |
+| **RPG Campaigns** (session tools, encounter builders) | Partially shipped. Session workspace, quest tracker, and scene templates exist. Full encounter builder remains out of scope. |
 | **Dice Roll Buttons** (inline `[dice:2d6]`) | Niche RPG feature. Not aligned with author/worldbuilder focus. |
 | **Custom Text Colors** (per-word coloring in editor) | Low value-add with effort. Standard formatting covers needs. |
 | **"5 Ws" Heuristic** (integrated prompting philosophy) | Our Brain Dump AI does this better — it extracts structure from raw text instead of asking the user to fill in fields. |
@@ -160,18 +156,21 @@ Effort is rated: **S** (days), **M** (1–2 weeks), **L** (3+ weeks).
 |---|---|---|---|---|
 | **P0** | Rich Text Editor (Tiptap — `LoreEditor`) | `L` | ✅ Shipped | — |
 | **P1** | `@`-mention interlinking + autolinker | `M` | ✅ Shipped | Rich Editor |
-| **P2** | Template Selection UX + missing templates | `S–M` | ✅ Shipped | — |
+| **P2** | Template Selection UX + missing templates | `S–M` | ✅ Shipped (15 templates) | — |
 | **P3** | Category tree / hierarchical nav in Portal | `M` | ✅ Shipped | — |
 | **P4** | Draft/Published lifecycle toggle | `S` | ✅ Shipped | — |
-| — | Visual Timeline | `M` | 🔲 Pending | — |
+| **P5** | Visual Timeline | `M` | ✅ Shipped | — |
+| **P6** | Public/Private sharing (note-level) | `M` | ✅ Shipped | — |
+| **P7** | Statblock Library + System Pack Import | `M` | ✅ Shipped | — |
+| **P8** | Session Workspace + Quests | `M` | ✅ Shipped | — |
 | — | Interactive Maps (visual layer) | `L` | 🔲 Pending | Azgaar Import |
 | — | Azgaar Import (data layer) | `M` | 🔲 Pending | — |
-| — | Public/Private granular sharing | `L` | 🔲 Pending | — |
+| — | Per-user access control | `L` | 🔲 Pending | Sharing |
 | — | Embedded graphs (family tree, diplomacy) | `M` | 🔲 Pending | Relationship data |
 | — | Onboarding wizard | `S–M` | 🔲 Pending | Stable UX |
 
 > [!NOTE]
-> **P0–P4 are all shipped.** The essential authoring experience gap is closed. Remaining items are deferrable enhancements.
+> **P0–P8 are all shipped.** The essential authoring, session runtime, and player sharing gaps are closed. Remaining items are maps, per-user access, embedded graphs, and onboarding.
 
 ---
 

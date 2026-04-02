@@ -1,8 +1,8 @@
 # AllCodex DM-First Roadmap
 
-> This file has been superseded.
-> The canonical roadmap now lives at `docs/shared/ROADMAP.md`.
-> Do not add new items here — update `docs/shared/ROADMAP.md` instead.
+> **Status: \ud83d\udce6 ARCHIVED** \u2014 Superseded by `docs/shared/ROADMAP.md` and `docs/shared/implementation_plan_phases_0_3.md`.
+> All items in this file have been triaged into the canonical roadmap and implementation plan.
+> Retained for historical reference only. **Do not update this file.**
 
 ---
 

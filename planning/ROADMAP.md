@@ -1,6 +1,6 @@
 # AllCodex Roadmap
 
-Date: March 31, 2026 · Updated: April 1, 2026
+Date: March 31, 2026 · Updated: April 2, 2026
 
 > **Single source of truth** for all AllCodex roadmap work across AllCodex Core, AllKnower, and AllCodex Portal.
 > When roadmap priorities conflict with component-level backlogs, this document wins.
@@ -61,14 +61,14 @@ Lightweight map embeds and pins are in scope. A full map editor is not.
 
 ## Delivery Order
 
-| Phase | Focus | Priority |
-|---|---|---|
-| Phase 0 | Foundation and contract repair | `P0` |
-| Phase 1 | Brain Dump becomes the front door | `P1` |
-| Phase 2 | Wiki article view and knowledge architecture | `P1` |
-| Phase 3 | Session runtime and continuity guardrails | `P1→P2` |
-| Phase 4 | Player-safe sharing, maps, and import | `P2` |
-| Phase 5 | Rules reference and system-content expansion | `P3` |
+| Phase | Focus | Priority | Status |
+|---|---|---|---|
+| Phase 0 | Foundation and contract repair | `P0` | ✅ Complete |
+| Phase 1 | Brain Dump becomes the front door | `P1` | ✅ Complete |
+| Phase 2 | Wiki article view and knowledge architecture | `P1` | ✅ Complete |
+| Phase 3 | Session runtime and continuity guardrails | `P1→P2` | ✅ Complete |
+| Phase 4 | Player-safe sharing, maps, and import | `P2` | ✅ Complete |
+| Phase 5 | Rules reference and system-content expansion | `P3` | ⚠️ Partial (statblocks shipped, rules ref TBD) |
 
 ---
 
@@ -127,7 +127,9 @@ Define and document:
 
 ---
 
-## Phase 0: Foundation And Contract Repair
+## Phase 0: Foundation And Contract Repair ✅
+
+> **Shipped.** Implementation plan: Phases A + E1. See `docs/shared/planning/implementation_plan_phases_0_3.md`.
 
 **Outcome:** the existing product stops feeling inconsistent, fragile, or misleading before larger DM workflows are added.
 
@@ -518,7 +520,9 @@ export async function importAzgaar(creds, file): Promise<ImportResult>
 
 ---
 
-## Phase 1: Brain Dump Becomes The Front Door
+## Phase 1: Brain Dump Becomes The Front Door ✅
+
+> **Shipped.** Implementation plan: Phase C. See `docs/shared/planning/implementation_plan_phases_0_3.md`.
 
 **Outcome:** raw thought becomes reliable structured canon with low friction and visible review points.
 
@@ -558,7 +562,9 @@ export async function importAzgaar(creds, file): Promise<ImportResult>
 
 ---
 
-## Phase 2: Wiki Article View And Knowledge Architecture
+## Phase 2: Wiki Article View And Knowledge Architecture ✅
+
+> **Shipped.** Implementation plan: Phase B. See `docs/shared/planning/implementation_plan_phases_0_3.md`.
 
 **Outcome:** AllCodex lore becomes easy to scan, navigate, and trust during play.
 
@@ -598,7 +604,9 @@ export async function importAzgaar(creds, file): Promise<ImportResult>
 
 ---
 
-## Phase 3: Session Runtime And Continuity Guardrails
+## Phase 3: Session Runtime And Continuity Guardrails ✅
+
+> **Shipped.** Implementation plan: Phases D + E2 + F. See `docs/shared/planning/implementation_plan_phases_0_3.md`.
 
 **Outcome:** the product becomes usable during a live session, not just before or after one.
 
@@ -636,7 +644,10 @@ export async function importAzgaar(creds, file): Promise<ImportResult>
 
 ---
 
-## Phase 4: Player-Safe Sharing, Maps, And Import
+## Phase 4: Player-Safe Sharing, Maps, And Import ✅
+
+> **Shipped** (sharing and import). Implementation plan: Phase G + Phase F (system-pack import).
+> Maps (embeds, pins, Azgaar import) are **deferred** to a future phase.
 
 **Outcome:** selected lore can be safely shown to players; maps become useful support surfaces.
 
@@ -674,7 +685,10 @@ export async function importAzgaar(creds, file): Promise<ImportResult>
 
 ---
 
-## Phase 5: Rules Reference And System Content Expansion
+## Phase 5: Rules Reference And System Content Expansion ⚠️ Partial
+
+> **Partially shipped.** Statblock library, system-pack import, and session-workspace statblock search are live.
+> Homebrew editing, rules-aware retrieval, and expanded template coverage remain TODO.
 
 **Outcome:** AllCodex becomes more useful at the table without turning into a full rules platform.
 

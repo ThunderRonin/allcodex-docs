@@ -1,5 +1,21 @@
 # Plan: AllCodex DM-First Roadmap Implementation (Phases 0-3)
 
+> **Status: \u2705 ALL PHASES COMPLETE** (April 2, 2026)
+>
+> Every step in this plan has been implemented and validated with clean builds.
+> This document is retained as the historical implementation specification.
+>
+> | Phase | Name | Status |
+> |-------|------|--------|
+> | A | Portal Config + Sanitization + Brain Dump History | \u2705 Complete |
+> | B | Wiki View + Navigation + Hierarchy | \u2705 Complete |
+> | C | Brain Dump Review Mode + Commit Flow | \u2705 Complete |
+> | D | Session Workspace + Quests + Timeline | \u2705 Complete |
+> | E1 | Contract Normalization + History Detail | \u2705 Complete |
+> | E2 | Session/Quest/Scene Templates + Canonical Schema | \u2705 Complete |
+> | F | Statblock Library + System-Pack Import + RAG Tag Filter | \u2705 Complete |
+> | G | Player-Safe Sharing + Shared Content Browser | \u2705 Complete |
+
 Date: April 2, 2026
 
 ## TL;DR
@@ -513,11 +529,125 @@ Allow importing SRD-compatible JSON packs of monsters, spells, items as statbloc
 
 ---
 
+## Phase G: Player-Safe Sharing (Roadmap Phase 4 — partial)
+
+*Depends on Phase B (wiki article view) and Phase E2 step 25 (canonical labels).*
+*Scheduling: parallel with Phase D/F once B completes.*
+
+**What already exists in AllCodex Core (no changes needed):**
+- Full share system via Shaca (read-only cache of `_share` subtree)
+- `#gmOnly` label → entire note hidden from shared output
+- `#draft` label → entire note hidden from shared output
+- `.gm-only` CSS class → elements stripped from rendered HTML
+- `#shareRoot` / `#shareAlias` / `#shareCredentials` labels for share configuration
+- `#shareHiddenFromTree` / `#shareIndex` / `#shareDisallowRobotIndexing` labels
+- Share routes at `/share/` with Basic Auth, alias resolution, recursive rendering
+- World variable expansion (`{{placeholder}}` → JSON values)
+
+### Step 32: Share Settings Panel on Lore Detail
+*Depends on Phase B step 5 (infobox redesign) — P1*
+
+**New file:** `allcodex-portal/components/portal/ShareSettings.tsx`
+- Props: `noteId`, `attributes` (existing note labels)
+- Shows current share state: shared / not shared / draft / GM-only
+- Toggle buttons: `#draft`, `#gmOnly` labels (via existing attribute POST/DELETE API)
+- Computed share URL display: `/share/{shareAlias || noteId}`
+
+**Modify:** `allcodex-portal/app/(portal)/lore/[id]/page.tsx`
+- Add "Sharing" section in the sidebar/infobox with the ShareSettings component
+
+**Files:** 1 new, 1 modified
+
+### Step 33: Share Root Configuration
+*Parallel with step 32 — P1*
+
+**Modify:** `allcodex-portal/app/(portal)/settings/page.tsx`
+- Add "Share Configuration" card (alongside Portal Configuration from step 1)
+- Field: **Share Root Note ID** — the note under which all shared content lives
+- Info text: notes under this root with `#shareRoot` become publicly accessible at `/share/`
+- Set `#shareRoot` label on the designated note via ETAPI
+
+**New file:** `allcodex-portal/app/api/share/route.ts`
+- `GET` — fetch share root info: find note with `#shareRoot` label, return its ID, title, alias
+- `PUT` — set `#shareRoot` label on a note (add label via ETAPI `POST /etapi/attributes`)
+
+**Files:** 1 new, 1 modified
+
+### Step 34: GM Preview vs Player Preview
+*Depends on step 32 — P1*
+
+**New file:** `allcodex-portal/components/portal/PreviewToggle.tsx`
+- Toggle on lore detail page: "GM View" | "Player View"
+- GM View (default): shows everything including `#gmOnly` and `#draft` content
+- Player View: fetches content from AllCodex Core's `/share/api/notes/:noteId` endpoint — returns already-filtered content with gmOnly/draft stripped
+
+**New file:** `allcodex-portal/app/api/lore/[id]/preview/route.ts`
+- `GET ?mode=player` — proxy to AllCodex Core `/share/api/notes/:noteId`
+- `GET ?mode=gm` (or no param) — proxy to ETAPI as usual
+
+**Modify:** `allcodex-portal/app/(portal)/lore/[id]/page.tsx`
+- Add `PreviewToggle` component
+- When "Player View" active, swap content source to preview API
+- Visually indicate player mode (different border color, "Player View" badge)
+
+**Files:** 2 new, 1 modified
+
+### Step 35: Share Alias Management
+*Parallel with steps 32-34 — P2*
+
+**Modify:** `allcodex-portal/components/portal/ShareSettings.tsx`
+- Add "Custom URL" field for `#shareAlias` label
+- Input: slug field, e.g. "blackstone-keep" → accessible at `/share/blackstone-keep`
+- Validation: alphanumeric + hyphens only
+- Save: add/update `#shareAlias` attribute via ETAPI
+
+**Files:** 1 modified
+
+### Step 36: Share Credentials (Basic Auth)
+*Parallel with steps 32-35 — P2*
+
+**Modify:** `allcodex-portal/components/portal/ShareSettings.tsx`
+- Add "Password Protection" section
+- Toggle: enable/disable password
+- When enabled: username + password fields → stored as `#shareCredentials` label value `"user:password"`
+- Warning: "Credentials are stored as a note label. Use a unique password."
+
+**Files:** 1 modified
+
+### Step 37: Shared Content Browser
+*Depends on steps 32-33 — P2*
+
+**New file:** `allcodex-portal/app/(portal)/shared/page.tsx`
+- Browse all notes under the share root
+- Tree or list view showing: title, share status, alias, draft/gmOnly badges
+- Quick toggle draft/gmOnly from the list
+- Link to each note's detail page and its public share URL
+
+**New file:** `allcodex-portal/app/api/share/tree/route.ts`
+- `GET` — fetch all notes under share root via ETAPI search for children of `_share`
+- Return with share-relevant attributes (shareAlias, gmOnly, draft, shareCredentials presence)
+
+**Modify:** `allcodex-portal/components/portal/AppSidebar.tsx`
+- Add "Shared" entry to sidebar navigation
+
+**Files:** 2 new, 1 modified
+
+### Phase G Verification
+1. Lore detail page shows share status badges + draft/gmOnly toggles
+2. Toggling `#gmOnly` on a note → note disappears from `/share/` output
+3. Toggling `#draft` → same behavior
+4. "Player View" toggle → shows content with gmOnly sections stripped
+5. Set share alias → note accessible at `/share/custom-alias`
+6. Set credentials → share page requires Basic Auth
+7. Shared content browser lists all shared notes with status
+8. Share root configurable from Settings
+
+---
+
 ## Deferred
 
 - **Azgaar FMG Import** (Phase 4) — deferred to last per user request
 - **Full map view**
-- **Player-safe sharing UI**
 - **Homebrew statblock editing** (after reader stabilizes)
 
 ---
@@ -533,6 +663,7 @@ Allow importing SRD-compatible JSON packs of monsters, spells, items as statbloc
 7. **Breadcrumbs use Portal-side traversal first** — avoid Core changes unless too slow
 8. **Session/quest/scene templates added to Core** — AllKnower's TEMPLATE_ID_MAP updated to match
 9. **Canonical lore schema doc** — single source of truth for all label/attribute conventions across 3 services
+10. **Player-safe sharing is Portal-only** — AllCodex Core share system already complete (Shaca cache, `#gmOnly`/`#draft` filtering, `.gm-only` HTML stripping, Basic Auth, aliases). Player View proxies Core's share routes rather than re-implementing filtering in the Portal
 
 ---
 
@@ -576,3 +707,10 @@ Allow importing SRD-compatible JSON packs of monsters, spells, items as statbloc
 |---|---|
 | New | `allcodex-portal/app/(portal)/statblocks/page.tsx`, `allcodex-portal/app/api/statblocks/route.ts`, `allcodex-portal/components/portal/StatblockCard.tsx`, `allknower/src/routes/import.ts`, `allcodex-portal/app/api/import/system-pack/route.ts`, `allcodex-portal/app/(portal)/import/page.tsx` |
 | Modified | `allcodex-portal/components/portal/AppSidebar.tsx`, `allcodex-portal/app/(portal)/session/page.tsx`, `allcodex-core/apps/server/src/services/hidden_subtree_templates.ts`, `allknower/src/rag/lancedb.ts`, `allknower/src/pipeline/brain-dump.ts` |
+
+### Phase G (Player-Safe Sharing)
+| Type | Files |
+|---|---|
+| New | `allcodex-portal/components/portal/ShareSettings.tsx`, `allcodex-portal/components/portal/PreviewToggle.tsx`, `allcodex-portal/app/api/share/route.ts`, `allcodex-portal/app/api/share/tree/route.ts`, `allcodex-portal/app/api/lore/[id]/preview/route.ts`, `allcodex-portal/app/(portal)/shared/page.tsx` |
+| Modified | `allcodex-portal/app/(portal)/lore/[id]/page.tsx`, `allcodex-portal/app/(portal)/settings/page.tsx`, `allcodex-portal/components/portal/AppSidebar.tsx` |
+| Core | **None** — share system already complete |

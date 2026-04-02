@@ -1,6 +1,8 @@
 # AllKnower: Remaining Features
 
-**Status as of 2026-03-29:** One feature remaining — Azgaar map import. Features 1 (relation writing) and 2 (auto-apply relations) are fully shipped.
+**Status as of 2026-04-02:** Features 1 and 2 are fully shipped. Feature 3 (Azgaar map import) is the only remaining item.
+
+> **Infrastructure note:** `src/routes/import.ts` now exists and contains `POST /import/system-pack` with full ETAPI helpers (`createNote`, `setNoteTemplate`, `createAttribute`, `getAllCodexNotes`). Feature 3 should add `POST /import/azgaar` to the same file rather than creating a new one.
 
 ---
 
@@ -70,15 +72,15 @@ Body: file (the .json export from Azgaar FMG)
     3. Link capital burg via relation (if burg note was already created)
   - `importRivers(rivers, loreRootNoteId)` — optional, creates location notes with `locationType: "river"`
 
-- [ ] **3b.** Create `src/routes/import.ts`:
-  - `POST /import/azgaar` accepts multipart form-data with a single JSON file field
+- [ ] **3b.** Add `POST /import/azgaar` to the **existing** `src/routes/import.ts` file (alongside `/import/system-pack`):
+  - Accept `multipart/form-data` with a single JSON file field
   - Parse JSON, call `parseAzgaarExport`
   - Call `importBurgs`, `importStates`, and optionally `importRivers`
   - Return `{ burgsCreated, statesCreated, riversCreated, skipped, errors }`
 
-- [ ] **3c.** Register route in `src/index.ts`.
+  > No new route file needed — `importRoute` is already registered in `src/app.ts`.
 
-- [ ] **3d.** Add `ImportHistory` model to Prisma schema:
+- [ ] **3c.** Add `ImportHistory` model to Prisma schema:
   ```prisma
   model ImportHistory {
     id           String   @id @default(cuid())
@@ -91,9 +93,9 @@ Body: file (the .json export from Azgaar FMG)
   }
   ```
 
-- [ ] **3e.** Add `azgaarImportParentNoteId` to `AppConfig` — the AllCodex note under which imported locations land. Defaults to lore root.
+- [ ] **3d.** Add `azgaarImportParentNoteId` to `AppConfig`
 
-- [ ] **3f.** Add a `dryRun: boolean` query param. When true, parses and validates the JSON but doesn't write anything to AllCodex. Returns what would be created.
+- [ ] **3e.** Add a `dryRun: boolean` query param.
 
 ### Generated HTML Template for Burgs
 
@@ -110,8 +112,7 @@ Body: file (the .json export from Azgaar FMG)
 | File | Change |
 |---|---|
 | `src/pipeline/azgaar.ts` | New — parser + importers |
-| `src/routes/import.ts` | New — `POST /import/azgaar` |
-| `src/index.ts` | Register `importRoute` |
+| `src/routes/import.ts` | **Existing** — add `POST /import/azgaar` alongside `POST /import/system-pack` |
 | `prisma/schema.prisma` | Add `ImportHistory` model |
 
 ---
@@ -121,7 +122,7 @@ Body: file (the .json export from Azgaar FMG)
 Features 1 and 2 are complete. Only Feature 3 (Azgaar import) remains.
 
 ```
-Feature 3: Azgaar import    (no dependencies — standalone)
+Feature 3: Azgaar import    (standalone — no new dependencies, import.ts already exists)
 ```
 
 ---
