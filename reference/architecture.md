@@ -521,8 +521,7 @@ Changes made to the Trilium fork for AllCodex Core:
 
 | Template | ID | Icon | Key Promoted Attributes |
 |---|---|---|---|
-| Character | `_template_character` | `bx-user` | fullName, aliases, age, race, gender, affiliation, role, status, secrets, goals |
-| Location | `_template_location` | `bx-map-pin` | locationType, region, population, ruler, secrets, geolocation |
+| Character | `_template_character` | `bx-user` | fullName, aliases, age, race, gender, affiliation, role, status, secrets, goals | locationType, region, population, ruler, secrets, geolocation |
 | Faction | `_template_faction` | `bx-shield` | factionType, foundingDate, leader, goals, secrets, status |
 | Creature | `_template_creature` | `bx-bug` | creatureType, habitat, diet, dangerLevel, abilities |
 | Event | `_template_event` | `bx-calendar-event` | inWorldDate, outcome, consequences, secrets |
@@ -835,7 +834,7 @@ graph TB
         Becca["Becca Cache<br/>(in-memory entity store)"]
         Shaca["Shaca Cache<br/>(share-only read cache)"]
         SQLite["SQLite Database<br/>notes | branches | attributes<br/>blobs | revisions | options"]
-        Templates[\"Lore Templates (15 implemented)<br/>Character | Location | Faction | Creature | Event<br/>Timeline | Manuscript | Statblock | Item | Spell<br/>Building | Language | Session | Quest | Scene\"]
+        Templates["Lore Templates (21 implemented)<br/>Character | Location | Faction | Creature | Event<br/>Timeline | Manuscript | Statblock | Item | Spell<br/>Building | Language | Session | Quest | Scene<br/>Organization | Race | Myth | Cosmology | Deity | Religion"]
 
         ETAPI --> Becca
         ShareRenderer --> Shaca
