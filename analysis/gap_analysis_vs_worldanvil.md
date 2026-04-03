@@ -21,13 +21,13 @@ Effort is rated: **S** (days), **M** (1–2 weeks), **L** (3+ weeks).
 
 | Aspect | World Anvil | AllCodex |
 |---|---|---|
-| Inline formatting | Highlight-to-format toolbar (bold, italic, color, dice, anchors) | Tiptap-based `LoreEditor` with bubble menu (bold, italic, underline, strike, color, highlight) |
+| Inline formatting | Highlight-to-format toolbar (bold, italic, color, dice, anchors) | BlockNote `LoreEditor` with formatting toolbar (bold, italic, underline, strike, color, highlight) |
 | Slash commands | `/` menu for headers, tables, line breaks, spoilers, quotes | `/` command palette (headings, blockquote, table, image, divider) |
-| Markdown triggers | `---`, `#`, etc. auto-convert | Supported via Tiptap's `Typography` extension |
-| Drag-and-drop images | Drag file onto editor → embedded | Image upload via `image-upload.ts` |
+| Markdown triggers | `---`, `#`, etc. auto-convert | Supported via BlockNote's input rules |
+| Drag-and-drop images | Drag file onto editor → embedded | Image upload via BlockNote file block |
 | `/image` command | Inline image embed from hosted assets | Available via slash command |
 
-**Status: ✅ Shipped.** `LoreEditor.tsx` (Tiptap) is the default editor across the create and edit flows.
+**Status: ✅ Shipped.** `LoreEditor.tsx` (BlockNote) is the default editor across the create and edit flows.
 
 **Previously:** `L` (3+ weeks). Required selecting and integrating a block editor, wiring it to ETAPI, and building an image upload pipeline.
 
@@ -51,9 +51,9 @@ Effort is rated: **S** (days), **M** (1–2 weeks), **L** (3+ weeks).
 |---|---|---|
 | Template browser | Visual menu with descriptions per template on hover | `TemplatePicker` modal with icon grid, description cards, and hover previews |
 | Template-specific prompts | Each template shows inspirational prompts ("5 Ws") | Promoted attributes rendered as a dedicated form section via `PromotedFields.tsx` |
-| Template count | 25+ specialized templates | 15 templates (Character, Location, Faction, Creature, Event, Timeline, Manuscript, Statblock, Item/Artifact, Spell, Building, Language, Session, Quest, Scene) + 6 brain-dump-only types |
+| Template count | 25+ specialized templates | 21 templates (all lore types) + General Lore — 22 total options in the Portal picker |
 
-**Status: ✅ Shipped.** `TemplatePicker.tsx` is the creation flow entry point. `PromotedFields.tsx` renders template-specific form fields. 15 typed templates cover the core worldbuilding entity types; 6 AllKnower-only types (organization, race, myth, cosmology, deity, religion) can be brain-dumped but lack Portal create/edit UI.
+**Status: ✅ Shipped.** `TemplatePicker.tsx` is the creation flow entry point. `PromotedFields.tsx` renders template-specific form fields. All 21 AllKnower entity types now have AllCodex Core templates and Portal picker entries. Only `timeline` in Portal picker is pending.
 
 ---
 
@@ -86,9 +86,9 @@ Effort is rated: **S** (days), **M** (1–2 weeks), **L** (3+ weeks).
 
 | Aspect | World Anvil | AllCodex |
 |---|---|---|
-| Interactive maps | Upload image → pin locations → link to articles | Azgaar import is planned but no visual map UI |
+| Interactive maps | Upload image → pin locations → link to articles | Azgaar FMG import is **shipped** (data pipeline + Portal UI), but no visual map viewer yet |
 
-**Why deferrable:** Maps are visually impressive but complex to build (Leaflet/MapLibre integration, marker management, zoom levels). The Azgaar import route handles data ingestion. A visual map viewer is a `L` effort that can come later.
+**Why deferrable:** Maps are visually impressive but complex to build (Leaflet/MapLibre integration, marker management, zoom levels). The Azgaar import pipeline and Portal UI are shipped (`POST /import/azgaar` with preview mode). A visual map viewer is a `L` effort that can come later.
 
 **Effort if pursued:** `L` (3+ weeks)
 

@@ -3,6 +3,16 @@
 > Inspired by Claude Code's leaked compaction architecture (March 31, 2026 npm leak).
 > Adapted for AllKnower's stateless LLM pipeline and RAG-based lore retrieval.
 
+**Implementation status (April 3, 2026):**
+
+| Tier | Description | Status |
+|---|---|---|
+| Tier 0 | Token counting infrastructure (`utils/tokens.ts`) | ✅ Shipped |
+| Tier 1 | RAG budget enforcement (`prompt.ts`) | ✅ Shipped |
+| Tier 1.5 | Chunk deduplication (`rag/chunk-dedup.ts`, 0.85 cosine threshold) | ✅ Shipped |
+| Tier 2 | Chunk summarization (`rag/chunk-compactor.ts`) | ✅ Shipped |
+| Tier 3 | Session compaction (`pipeline/session-compactor.ts`, Prisma tables) | 🔧 Prepared (code + DB tables exist, not wired to routes) |
+
 ---
 
 ## Background
@@ -55,7 +65,7 @@ Tiers are **independent and additive**:
 
 ---
 
-## Tier 0 — Token Counting Infrastructure
+## Tier 0 — Token Counting Infrastructure ✅
 
 > **Cost:** zero LLM calls
 > **Effort:** ~20 min
@@ -118,7 +128,7 @@ Good enough for budgeting, which is all we need.
 
 ---
 
-## Tier 1 — RAG Budget Enforcement
+## Tier 1 — RAG Budget Enforcement ✅
 
 > **Cost:** zero LLM calls, pure logic
 > **Effort:** ~30 min

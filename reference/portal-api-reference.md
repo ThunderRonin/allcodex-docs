@@ -4,7 +4,7 @@
 > The Portal acts as a **secure proxy** — all backend calls happen server-side.
 > The browser never sees AllCodex ETAPI tokens or AllKnower Bearer tokens.
 
-Date: April 2, 2026
+Date: April 3, 2026
 
 ---
 
@@ -276,8 +276,11 @@ Each note includes: `noteId`, `title`, `isDraft`, `isGmOnly`, `shareAlias`, `isP
 | Method | Path | Description | Backend |
 |--------|------|-------------|---------|
 | `POST` | `/api/import/system-pack` | Import a system pack (SRD, monster manual, etc.) | AllKnower |
+| `POST` | `/api/import/azgaar` | Import an Azgaar Fantasy Map Generator JSON file. Use `?action=preview` to preview entities without creating notes; omit the parameter to execute the full import. AllKnower parses the map JSON, creates location/faction/religion notes, skips duplicates, and returns created/skipped counts. | AllKnower |
 
-The request body is the full system pack JSON. AllKnower creates statblock notes with `#statblock` labels, skips duplicates by title, and returns created/skipped counts.
+The system pack request body is the full system pack JSON. AllKnower creates statblock notes with `#statblock` labels, skips duplicates by title, and returns created/skipped counts.
+
+The Azgaar import accepts the raw `.map` JSON export. Preview mode returns a summary of entities that would be created without writing anything.
 
 ---
 

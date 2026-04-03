@@ -410,7 +410,9 @@ Wrap each history entry in `<Link href={/brain-dump/${entry.id}}>`, add hover af
 
 ---
 
-### Feature 6: Azgaar FMG Import
+### Feature 6: Azgaar FMG Import ✅ SHIPPED
+
+> **Status:** Fully implemented. AllKnower pipeline (`src/pipeline/azgaar.ts`) parses Azgaar `.map` JSON, creates location/faction/religion notes via ETAPI, supports duplicate-skip and preview mode. Portal proxy at `/api/import/azgaar` with `?action=preview` for dry-run. Import page UI at `/import` supports drag-and-drop, preview, and result reporting.
 
 **Problem:** No bulk import exists for world geography. Scope: Portal triggers, AllKnower processes.
 
@@ -646,27 +648,27 @@ export async function importAzgaar(creds, file): Promise<ImportResult>
 
 ## Phase 4: Player-Safe Sharing, Maps, And Import ✅
 
-> **Shipped** (sharing and import). Implementation plan: Phase G + Phase F (system-pack import).
-> Maps (embeds, pins, Azgaar import) are **deferred** to a future phase.
+> **Shipped** (sharing, system-pack import, and Azgaar import). Implementation plan: Phase G + Phase F (system-pack import) + Feature 6 (Azgaar).
+> Maps (embeds, pins, visual map viewer) are **deferred** to a future phase.
 
-**Outcome:** selected lore can be safely shown to players; maps become useful support surfaces.
+**Outcome:** selected lore can be safely shown to players; Azgaar Fantasy Map Generator JSON can be imported to seed location/faction/religion notes.
 
 ### Portal
 
 - add a proper share and publish settings UI for notes and worlds
 - add GM preview versus player-safe preview
 - expose draft, GM-only, share-root, share-index, and related share controls cleanly
-- add map embeds to lore pages and session views
-- add clickable map pins that resolve to lore notes
-- add a lightweight map view for browsing linked places
-- add Azgaar import UI with preview, select, import, and result reporting
+- ~~add Azgaar import UI with preview, select, import, and result reporting~~ ✅ shipped
+- add map embeds to lore pages and session views *(deferred)*
+- add clickable map pins that resolve to lore notes *(deferred)*
+- add a lightweight map view for browsing linked places *(deferred)*
 
 ### AllKnower
 
-- add `POST /import/azgaar` plus import history and dry-run support
-- map Azgaar entities into AllCodex location, faction, and optional river/event notes
-- return import results in a Portal-friendly shape with created note links and warnings
-- optionally generate follow-up summaries or hierarchy suggestions for imported geography
+- ~~add `POST /import/azgaar` plus import history and dry-run support~~ ✅ shipped
+- ~~map Azgaar entities into AllCodex location, faction, and optional river/event notes~~ ✅ shipped
+- ~~return import results in a Portal-friendly shape with created note links and warnings~~ ✅ shipped
+- optionally generate follow-up summaries or hierarchy suggestions for imported geography *(deferred)*
 
 ### AllCodex Core
 
@@ -768,8 +770,8 @@ Cross-phase slices that coordinate work across services.
 
 - GM/player preview
 - share settings UI
-- map embeds and clickable pins
-- Azgaar import pipeline
+- ~~map embeds and clickable pins~~ *(deferred)*
+- ~~Azgaar import pipeline~~ ✅ shipped
 - share-safe public article presentation
 
 ### Workstream G: Rules And System Content — `P3`
@@ -778,6 +780,19 @@ Cross-phase slices that coordinate work across services.
 - rules pack import and browsing
 - grounded rules-aware generation
 - homebrew system-content views
+
+### Cross-Cutting: Context Compaction (AllKnower infrastructure)
+
+Infrastructure to keep RAG and LLM context usage efficient as lore databases grow.
+
+| Tier | Description | Status |
+|---|---|---|
+| Tier 0 | Baseline RAG budget enforcement | ✅ Shipped |
+| Tier 1 | Chunk deduplication (0.85 cosine threshold) — `rag/chunk-dedup.ts` | ✅ Shipped |
+| Tier 2 | Chunk summarization — `rag/chunk-compactor.ts` | ✅ Shipped |
+| Tier 3 | Session compaction — `pipeline/session-compactor.ts`, `lore_session` + `lore_session_message` Prisma tables | 🔧 Prepared (DB tables + compactor code exist, not wired to routes) |
+
+See [analysis/context_compaction_plan.md](../analysis/context_compaction_plan.md) for the full design.
 
 ---
 

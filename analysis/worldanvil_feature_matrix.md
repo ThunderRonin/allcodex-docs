@@ -3,9 +3,9 @@
 > Implementation-verified audit of the World Anvil feature pages stored in `docs/worldanvil/`.
 > Prefer this document over the older high-level gap note when making parity or roadmap decisions.
 
-Date: April 2, 2026
+Date: April 3, 2026
 
-> **Phase A–G updates applied.** Many items previously rated `half-assed` or `Can have` are now `comparable` or `better` after shipping: session workspace, quests, timeline, statblock library, system-pack import, player-safe sharing, and 15 AllCodex Core templates.
+> **Phase A–G updates applied.** Many items previously rated `half-assed` or `Can have` are now `comparable` or `better` after shipping: session workspace, quests, timeline, statblock library, system-pack import, Azgaar import, player-safe sharing, and all 21 AllCodex Core templates.
 
 ---
 
@@ -80,10 +80,10 @@ The biggest gaps are not in note-taking or intelligence. They are in:
 | Autolinker | Already have - comparable | A document scan plus selective apply dialog already exists. | No parity work needed. | - |
 | Autolinker control modes (automatic / partial / manual) | Already have - half-assed | Current flow is review-and-select, which covers manual or semi-manual use, but not clear one-click or graduated modes. | Add explicit `link all`, `review`, and `manual only` modes. | S |
 | Re-run autolinker on older articles after new notes exist | Already have - comparable | Current autolinker can be run against any open note body. | No parity work needed. | - |
-| Rich text editor / WYSIWYG authoring | Already have - better | Tiptap/Novel editor with slash commands, formatting, uploads, mentions, autolink, task lists, and bubble menu. | No parity work needed. | - |
+| Rich text editor / WYSIWYG authoring | Already have - better | BlockNote editor with slash commands, formatting, uploads, mentions, autolink, and task lists. | No parity work needed. | - |
 | Template browser / guided article creation | Already have - comparable | `TemplatePicker` and `PromotedFields` already support guided entry creation. | No parity work needed. | - |
 | Template-specific structured fields | Already have - comparable | Structured fields exist in the Portal and in AllKnower's template seeding. | Normalize field names so Portal and AllKnower use the same canonical keys. | S |
-| Broad template coverage | Already have - comparable | 15 AllCodex Core templates (Character, Location, Faction, Creature, Event, Timeline, Manuscript, Statblock, Item, Spell, Building, Language, Session, Quest, Scene). AllKnower supports 21 entity types total (6 brain-dump-only: organization, race, myth, cosmology, deity, religion). | Expose the remaining 6 brain-dump-only types in the Portal picker. | S |
+| Broad template coverage | Already have - comparable | 21 AllCodex Core templates (all entity types: Character, Location, Faction, Creature, Event, Timeline, Manuscript, Statblock, Item, Spell, Building, Language, Session, Quest, Scene, Organization, Race, Myth, Cosmology, Deity, Religion). Portal picker exposes 20 typed + General Lore (timeline pending). | Add `timeline` to Portal picker. | S |
 | Hoverable article previews / richer linked-entry context | Already have - half-assed | Mention suggestions show title and lore type, but there is no rich hover preview of note content. | Add lightweight hover cards fed by note summaries. | S-M |
 | Theme the wiki to match the world | Already have - half-assed | Portal has one hardcoded grimoire theme. Core share theming is more flexible under the hood, but not surfaced in Portal. | Expose per-world theme configuration and share theme selection. | M |
 | Build privately before publishing | Already have - better | Default behavior is private authoring. Public exposure is opt-in through share mechanisms. | No parity work needed. | - |
@@ -114,7 +114,7 @@ The biggest gaps are not in note-taking or intelligence. They are in:
 | Random loot tables / encounter tables / rollable tables | Can have | No dedicated roll-table system exists. | Add table schemas, weighted rows, dice evaluation, and inline rendering. | M |
 | Link table results to statblocks | Can have | Depends on roll tables. | Resolve rows to note IDs and statblocks once roll tables exist. | M |
 | Global worldbuilding to-do list | Already have - half-assed | Task list blocks exist in the editor, but there is no global task index or automatic "unfinished article" list. | Build a task dashboard and note-completion tracker. | M |
-| Interactive maps | Can have | Core has note-map and geo-map primitives, but Portal has no interactive map UI. | Build a visual map layer in Portal using current map/note infrastructure. | L |
+| Interactive maps | Already have - half-assed | Azgaar FMG import is shipped (data pipeline + Portal UI with preview). Core has note-map and geo-map primitives, but Portal has no interactive map viewer. | Build a visual map layer in Portal using current map/note infrastructure. | L |
 | Map popups / minor location blurbs | Can have | Not exposed in Portal. | Add marker popups tied to note excerpts and lightweight location notes. | M-L |
 | Chronicles: combine maps and timelines | Can have | No combined visualization exists today. | Layer events onto maps after map + timeline foundations are built. | L |
 | Visual timeline | Already have - comparable | `/timeline` page renders events chronologically with in-world dates and sort controls. | Add richer filtering and zoom controls. | S |
@@ -196,7 +196,7 @@ These are recommendations that surfaced while tracing the implementation, not ju
 | P1 | Promoted attribute naming is inconsistent | The Portal currently uses human-facing labels as attribute names in some paths, while AllKnower template seeding and backend lore schemas use canonical lowercase field names. This will create drift across notes. | Introduce a single canonical field registry shared by Portal and AllKnower. UI labels should map to canonical keys, not become keys themselves. | S |
 | P1 | The Portal docs overstate hierarchy parity | The existing high-level gap doc described `half-assed` hierarchy, but `LoreTree` now renders genuine nested branches. | Docs updated to reflect actual shipped behavior. | - |
 | ~~P1~~ | ~~Share and publish capabilities are underexposed~~ | **Resolved in Phase G.** `ShareSettings.tsx`, `PreviewToggle.tsx`, `/shared` browser, and settings share configuration card now surface Core share primitives. | ~~Surface share-state in Portal.~~ | - |
-| P1 | The backend already supports more lore types than the Portal exposes | AllKnower defines 21 entity types; AllCodex Core has 15 templates; Portal picker exposes 15. Remaining 6 (organization, race, myth, cosmology, deity, religion) are brain-dump-only. | Expose the 6 remaining types in the Portal picker. | S |
+| P1 | The backend already supports more lore types than the Portal exposes | AllKnower defines 21 entity types; AllCodex Core now has 21 templates; Portal picker exposes 20 typed + General Lore. Only `timeline` is missing from the picker. | Add `timeline` to the Portal picker. | S |
 | P2 | Collaboration features need an explicit auth decision first | AllKnower auth is explicitly documented as single-owner oriented. Adding co-authors, player groups, or patron tiers without a deliberate auth/ACL model will create rework. | Decide whether the product remains single-owner with public sharing or evolves into true multi-user collaboration. Do this before building co-authoring or subscriber groups. | M-L |
 | P2 | Roadmap choice should be explicit: writer-first or GM-first | The next large investments differ sharply. Writer-first favors manuscript UX, world meta, and publication. GM-first favors maps, timelines, and DM tools. | Pick a near-term product identity before taking on maps, campaign tooling, or monetization. | S |
 | P2 | Documentation drift is already appearing | The older gap analysis now overstates some shipped features and understates some implementation mismatches. | Treat implementation-verified audits like this one as the source of truth, and re-audit docs when major features land. | S |

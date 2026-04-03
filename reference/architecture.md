@@ -214,7 +214,7 @@ A Next.js 16 app with React 19. It is the only thing the user interacts with. Th
 | Data fetching | TanStack Query (30s stale time, 1 retry) |
 | State | `useState` for ephemeral component state; **Zustand** for shared AI tool state (`useAIToolsStore`) and brain dump state (`useBrainDumpStore`) |
 | UI components | shadcn/ui (Radix primitives + Tailwind) |
-| Editor | Novel v1 (`LoreEditor`) — Novel-wrapped Tiptap with slash commands, bubble menu, `@`-mentions, tables, images |
+| Editor | BlockNote (`LoreEditor`) — `@blocknote/shadcn`-themed block editor with slash commands, `@`-mentions, inline autolinker, tables, images |
 | Dark theme | Cinzel (headings) + Crimson Text (body) fonts |
 | Drawer/sheets | Vaul |
 
@@ -224,9 +224,9 @@ A Next.js 16 app with React 19. It is the only thing the user interacts with. Th
 |---|---|---|
 | `/` | Dashboard | Stat cards, recent entries grid, quick actions, system status |
 | `/lore` | Lore Browser | Two-panel layout: `LoreTree` sidebar (type-category filter with counts) + filterable card grid. |
-| `/lore/new` | New Entry | `TemplatePicker` modal to select a lore type, then title + `LoreEditor` (Novel/Tiptap) + `PromotedFields` for template-specific attributes. |
+| `/lore/new` | New Entry | `TemplatePicker` modal to select a lore type, then title + `LoreEditor` (BlockNote) + `PromotedFields` for template-specific attributes. |
 | `/lore/[id]` | Note Detail | Two-column: rendered content + sidebar with labels, relations, `RelationshipGraph` (on-demand Mermaid diagram of existing + AI-suggested connections with per-suggestion Apply buttons), and "Suggest Connections" button. |
-| `/lore/[id]/edit` | Edit Note | Title, `TemplatePicker` (template switcher), `LoreEditor` (Novel/Tiptap rich text), `PromotedFields`, draft toggle (`#draft` label), delete with confirmation. |
+| `/lore/[id]/edit` | Edit Note | Title, `TemplatePicker` (template switcher), `LoreEditor` (BlockNote rich text), `PromotedFields`, draft toggle (`#draft` label), delete with confirmation. |
 | `/brain-dump` | Brain Dump | Textarea for raw text. Shows results (created/updated entities) + history. State managed by `useBrainDumpStore`. |
 | `/search` | Search | Dual-mode: Semantic (RAG via AllKnower) or Attribute (ETAPI query via AllCodex) |
 | `/ai/consistency` | Consistency | Optional note IDs input. Runs scan, shows issues by severity. State managed by `useAIToolsStore`. |
@@ -237,7 +237,7 @@ A Next.js 16 app with React 19. It is the only thing the user interacts with. Th
 | `/timeline` | Timeline | Chronological event list with sort, date display, and in-world dates. |
 | `/statblocks` | Statblock Library | CR-filterable, searchable statblock card grid with full stat display. |
 | `/shared` | Shared Content | Share browser with share toggle, password set, and preview links. |
-| `/import` | Import | System pack importer with preview, duplicate-skip, and result reporting. |
+| `/import` | Import | System pack + Azgaar Fantasy Map Generator importer with preview, duplicate-skip, and result reporting. |
 | `/brain-dump/[id]` | Brain Dump Detail | Single brain dump history detail (raw text, entities, metadata). |
 | `/settings` | Settings | Three sections: AllCodex connection, AllKnower connection, Share Configuration (share root, default visibility), and Portal Config. |
 
@@ -517,7 +517,7 @@ Changes made to the Trilium fork for AllCodex Core:
 
 ### Lore Templates (hidden_subtree_templates.ts)
 
-15 templates added under a "Lore Templates" book note:
+21 lore templates added under a "Lore Templates" book note:
 
 | Template | ID | Icon | Key Promoted Attributes |
 |---|---|---|---|
@@ -535,8 +535,14 @@ Changes made to the Trilium fork for AllCodex Core:
 | Session | `_template_session` | `bx-game` | sessionDate, players, sessionStatus, recap, hooks, gmNotes |
 | Quest | `_template_quest` | `bx-target-lock` | questStatus, questGiver, reward, location, hooks, consequences. Also carries `#quest` label. |
 | Scene | `_template_scene` | `bx-clapperboard` | location, participants, outcome, gmNotes |
+| Organization | `_template_organization` | `bx-buildings` | orgType, leader, headquarters, goals, secrets |
+| Race | `_template_race` | `bx-group` | raceName, homeland, physicalTraits, culturalTraits, abilities |
+| Myth | `_template_myth` | `bx-book-reader` | mythType, origin, significance, relatedDeities |
+| Cosmology | `_template_cosmology` | `bx-planet` | plane, characteristics, inhabitants, connections |
+| Deity | `_template_deity` | `bx-crown` | domain, alignment, symbol, worshippers, rivals |
+| Religion | `_template_religion` | `bx-church` | deity, tenets, clergy, holyDays, sacredSites |
 
-> **Template parity gap**: AllKnower defines 21 entity types in `src/types/lore.ts`. 6 types have no AllCodex Core template yet: organization, race, myth, cosmology, deity, religion. Brain dumps can still create notes of these types (AllKnower seeds templates via `POST /setup/seed-templates`), but the Portal's create/edit UI won't offer them in the picker until corresponding templates are added to `hidden_subtree_templates.ts` and `TemplatePicker.tsx`.
+> **Template parity note**: All 21 entity types from `src/types/lore.ts` now have AllCodex Core templates. The Portal's `TemplatePicker.tsx` exposes 21 options (20 typed + General Lore). **Timeline** is the only type missing from the Portal picker — timeline notes can still be created via brain dump or ETAPI.
 
 Each template carries the `#template` label and defines promoted attributes using Trilium's `label:fieldName = "promoted,alias=Display Name,single,text"` syntax. When a note's `~template` relation points to one of these, Trilium renders the promoted fields as a structured form.
 
@@ -581,6 +587,8 @@ src/
   etapi/client.ts       AllCodex Core ETAPI wrapper (createNote, tagNote, etc.)
   pipeline/
     brain-dump.ts       Main orchestrator (RAG -> LLM -> parse -> ETAPI)
+    azgaar.ts           Azgaar Fantasy Map Generator import pipeline (parse JSON, create notes)
+    session-compactor.ts  Session compaction (Tier 3) — summarise long conversations (prepared, not route-wired)
     model-router.ts     Per-task model selection with OpenRouter fallbacks
     prompt.ts           System/user prompt builders + callLLM()
     parser.ts           Zod parser for LLM JSON responses
@@ -607,7 +615,7 @@ src/
     suggest.ts          POST /suggest/relationships, GET /suggest/gaps, /suggest/autocomplete
     health.ts           GET /health (deep check: AllCodex Core + Postgres + LanceDB)
     setup.ts            POST /setup/seed-templates
-    import.ts           POST /import/system-pack
+    import.ts           POST /import/system-pack, POST /import/azgaar/preview, POST /import/azgaar, GET /import/azgaar/preview (stub)
   types/
     lore.ts             Zod schemas (21 entity types, 17 relationship types, brain dump result, etc.)
 ```
@@ -625,6 +633,8 @@ src/
 | `rag_index_meta` | Tracks which notes are indexed (noteId, title, chunk count, model, embeddedAt) |
 | `app_config` | Key-value store for runtime settings (loreRootNoteId, etc.) |
 | `relation_history` | Log of applied relation suggestions (sourceNoteId, targetNoteId, type, description) |
+| `lore_session` | Session compaction (Tier 3) — conversation session metadata (userId, title, createdAt, compactedAt) |
+| `lore_session_message` | Individual messages within a lore session (role, content, tokenCount, sessionId FK) |
 
 ### LanceDB schema
 
@@ -656,14 +666,14 @@ app/
     lore/page.tsx         Filterable card grid
     lore/new/page.tsx     TemplatePicker -> LoreEditor + PromotedFields (create flow)
     lore/[id]/page.tsx    Detail view (content + sidebar) + RelationshipGraph
-    lore/[id]/edit/       Edit title + LoreEditor (Tiptap) + TemplatePicker + PromotedFields + draft toggle
+    lore/[id]/edit/       Edit title + LoreEditor (BlockNote) + TemplatePicker + PromotedFields + draft toggle
     search/page.tsx       Dual-mode: semantic (RAG) or attribute (ETAPI)
     quests/page.tsx       Quest tracker (status filter, completion toggle, quest cards)
     session/page.tsx      Live session workspace (recap, timer, statblock lookup, quick-create)
     timeline/page.tsx     Chronological event timeline with in-world dates
     statblocks/page.tsx   Statblock library (CR filter, search, full stat cards)
     shared/page.tsx       Shared content browser (share toggles, passwords, preview links)
-    import/page.tsx       System pack import (preview, duplicate-skip, result reporting)
+    import/page.tsx       System pack + Azgaar Fantasy Map Generator import (preview, duplicate-skip, result reporting)
     ai/consistency/       Consistency checker UI (state: useAIToolsStore)
     ai/gaps/              Gap detector UI (state: useAIToolsStore)
     ai/relationships/     Relationship suggester + apply UI (state: useAIToolsStore)
@@ -686,6 +696,7 @@ app/
     brain-dump/history/route.ts  Proxy to AllKnower brain dump history
     brain-dump/history/[id]/route.ts  Proxy to AllKnower brain dump detail
     import/system-pack/route.ts  Proxy to AllKnower system pack import
+    import/azgaar/route.ts       Proxy to AllKnower Azgaar import (preview + full import)
     quests/route.ts           Quest CRUD proxy
     statblocks/route.ts       Statblock query proxy
     timeline/route.ts         Timeline event query proxy
@@ -717,9 +728,16 @@ components/
   portal/PreviewToggle.tsx    GM ↔ player preview switcher for shared content
   portal/StatblockCard.tsx    D&D-style statblock card (ability scores, HP, AC, CR, actions)
   portal/Breadcrumbs.tsx      Note ancestor path breadcrumb
+  portal/ActionStrip.tsx      Contextual action buttons strip for lore entries
+  portal/NarrativeSectionCard.tsx  Collapsible narrative section display for lore detail
+  portal/NotePreview.tsx      Compact note preview card for linked note references
+  portal/PortalPageHeader.tsx Page header with title, description, and actions slot
+  portal/StepIndicator.tsx    Multi-step progress indicator (used in import/setup flows)
+  portal/TableOfContents.tsx  Auto-generated TOC sidebar from note heading structure
+  portal/StatusBadge.tsx      Badge component for status indicators (draft, shared, etc.)
   providers.tsx               TanStack Query + Tooltip providers
-  editor/LoreEditor.tsx       Novel (Tiptap wrapper) rich text editor (slash commands, bubble menu, @-mentions, tables, images)
-  editor/TemplatePicker.tsx   Template selection modal (15 types: 14 typed + General Lore)
+  editor/LoreEditor.tsx       BlockNote rich text editor (slash commands, `@`-mentions, inline autolinker, tables, images)
+  editor/TemplatePicker.tsx   Template selection modal (22 options: 21 lore types + General Lore)
   editor/PromotedFields.tsx   Template-specific attribute form (fullName, race, etc.)
   editor/AutolinkerDialog.tsx Scans note text for unlinked title matches
   ui/                         shadcn components (badge, button, card, dialog, etc.)
@@ -727,28 +745,25 @@ components/
 
 ### Editor architecture
 
-The lore editor (`LoreEditor.tsx`) wraps [Novel](https://novel.sh/) (which wraps Tiptap) with a worldbuilding-focused extension chain:
+The lore editor (`LoreEditor.tsx`) is built on [BlockNote](https://www.blocknotejs.org/) with `@blocknote/shadcn` theming for a worldbuilding-focused editing experience:
 
 ```
-Novel (LoreEditor.tsx)
-  └─ Tiptap
-       ├─ StarterKit (paragraphs, bold, italic, headings, lists, code, blockquote)
-       ├─ Highlight, TaskList/TaskItem, Table/TableRow/TableCell
-       ├─ Image (drag-drop + paste → /api/lore/upload-image → AllCodex image note)
-       ├─ Link (autolink enabled)
+BlockNote (LoreEditor.tsx)
+  └─ @blocknote/react + @blocknote/shadcn
+       ├─ Default blocks (paragraphs, bold, italic, headings, lists, code, blockquote)
+       ├─ Table blocks
+       ├─ Image blocks (drag-drop + paste → /api/lore/upload-image → AllCodex image note)
+       ├─ Inline content (links, autolinker)
        ├─ Placeholder ("Begin inscribing your lore…")
        ├─ mentionExtension (@-mention → /api/lore/mention-search → internal link)
-       └─ slashCommand (/ menu: heading, bullets, numbered, quote, code, image, table, todo)
+       └─ Slash menu (heading, bullets, numbered, quote, code, image, table)
 ```
 
 | File | Purpose |
 |---|---|
-| `editor/LoreEditor.tsx` | Main editor component. Configures Novel with extensions, bubble menu, slash command. Emits `onSave(html)` via debounced autosave. |
-| `editor/slash-command.tsx` | Slash command menu items and rendering (Cmdk-based popup) |
-| `editor/bubble-menu.tsx` | Floating toolbar on selection: bold, italic, strikethrough, link |
-| `editor/mention-extension.ts` | Tiptap `Mention` node that fetches `/api/lore/mention-search?q=` for autocomplete |
-| `editor/extensions.ts` | Assembles the Tiptap extension array |
-| `editor/image-upload.ts` | Handles image paste/drop, uploads to `/api/lore/upload-image`, returns URL |
+| `editor/LoreEditor.tsx` | Main editor component. Configures BlockNote with `@blocknote/shadcn` theme, mentions, autosave. Emits `onSave(html)` via debounced autosave. |
+| `editor/mention.tsx` | Mention suggestion UI component, renders autocomplete dropdown |
+| `editor/mention-extension.tsx` | BlockNote mention inline content that fetches `/api/lore/mention-search?q=` for autocomplete |
 | `editor/TemplatePicker.tsx` | Modal for selecting lore type when creating/switching templates |
 | `editor/PromotedFields.tsx` | Dynamic form for template-specific attributes (fullName, race, etc.) |
 | `editor/AutolinkerDialog.tsx` | Scans HTML for entity title matches; offers batch-link insertion |
@@ -815,7 +830,7 @@ graph TB
     subgraph AllKnower["AllKnower<br/>(Elysia / Bun)<br/>Port 3001"]
         direction TB
         AkRoutes["Routes<br/>brain-dump | rag | consistency<br/>suggest | health | setup"]
-        Pipeline["Pipeline<br/>brain-dump.ts | prompt.ts | parser.ts<br/>relations.ts | model-router.ts"]
+        Pipeline["Pipeline<br/>brain-dump.ts | azgaar.ts | prompt.ts | parser.ts<br/>relations.ts | model-router.ts | session-compactor.ts"]
         RAG["RAG<br/>embedder.ts | lancedb.ts | indexer.ts"]
         AkETAPI["etapi/client.ts<br/>(AllCodex ETAPI calls)"]
         AkAuth["better-auth<br/>(sessions + Bearer)"]

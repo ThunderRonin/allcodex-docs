@@ -1,8 +1,8 @@
 # AllKnower: Remaining Features
 
-**Status as of 2026-04-02:** Features 1 and 2 are fully shipped. Feature 3 (Azgaar map import) is the only remaining item.
+**Status as of 2026-04-03:** All three features are shipped. Feature 3 (Azgaar map import) was the last to complete — the pipeline, route, and Portal proxy are all live.
 
-> **Infrastructure note:** `src/routes/import.ts` now exists and contains `POST /import/system-pack` with full ETAPI helpers (`createNote`, `setNoteTemplate`, `createAttribute`, `getAllCodexNotes`). Feature 3 should add `POST /import/azgaar` to the same file rather than creating a new one.
+> **Infrastructure note:** `src/routes/import.ts` contains both `POST /import/system-pack` and `POST /import/azgaar` (with preview support). `src/pipeline/azgaar.ts` handles parsing and note creation.
 
 ---
 
@@ -18,7 +18,9 @@ Brain dump pipeline (`src/pipeline/brain-dump.ts`) now calls `suggestRelationsFo
 
 ---
 
-## Feature 3: Azgaar Fantasy Map Generator Import
+## ✅ Feature 3: Azgaar Fantasy Map Generator Import — **SHIPPED**
+
+Implemented in `src/pipeline/azgaar.ts` (parser + note creators) and `src/routes/import.ts` (`POST /import/azgaar` with `?action=preview` for dry-run). Portal proxy at `app/api/import/azgaar/route.ts`. Import page UI supports drag-and-drop, entity preview, duplicate-skip, and result reporting.
 
 **What:** A new endpoint that accepts an Azgaar FMG JSON export and bulk-creates Location (and optionally Faction) notes in AllCodex via ETAPI.
 
@@ -119,10 +121,12 @@ Body: file (the .json export from Azgaar FMG)
 
 ## Implementation Order
 
-Features 1 and 2 are complete. Only Feature 3 (Azgaar import) remains.
+All three features are complete.
 
 ```
-Feature 3: Azgaar import    (standalone — no new dependencies, import.ts already exists)
+Feature 1: Relation Writing    ✅ shipped
+Feature 2: Auto-Apply          ✅ shipped
+Feature 3: Azgaar import       ✅ shipped
 ```
 
 ---
