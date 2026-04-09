@@ -186,6 +186,8 @@ All LLM and embedding calls go through OpenRouter. Each task has a configurable 
 | `GET` | `/suggest/gaps` | Detect underdeveloped lore areas |
 | `GET` | `/suggest/autocomplete?q=...` | Title autocomplete (3-phase: prefix → RAG → LLM) |
 | `POST` | `/import/system-pack` | Import SRD/system JSON packs as statblock notes |
+| `POST` | `/import/azgaar` | Import an Azgaar Fantasy Map Generator export |
+| `POST` | `/import/azgaar/preview` | Preview an Azgaar map export |
 | `POST` | `/setup/seed-templates` | Create lore templates in AllCodex |
 | `GET` | `/health` | Service health (AllCodex, Postgres, LanceDB) |
 | `POST` | `/api/auth/sign-up/email` | Register a new AllKnower account |
@@ -275,7 +277,7 @@ This is the core feature. The user pastes raw worldbuilding text and gets struct
 
    c. **LLM Call**: sends the prompt to `x-ai/grok-4.1-fast` via OpenRouter. The model returns a JSON object with `entities[]` and a `summary`.
 
-   d. **Zod Validation**: the response is parsed through `ClaudeResponseSchema`. Invalid entities are dropped individually (best-effort partial parse); valid ones proceed.
+   d. **Zod Validation**: the response is parsed through `LLMResponseSchema`. Invalid entities are dropped individually (best-effort partial parse); valid ones proceed.
 
    e. **Note Creation Loop**: for each entity:
       - If `action: "update"` and `existingNoteId` is set: PATCH the note title and PUT the content via ETAPI.
@@ -517,7 +519,7 @@ Changes made to the Trilium fork for AllCodex Core:
 
 ### Lore Templates (hidden_subtree_templates.ts)
 
-15 templates added under a "Lore Templates" book note:
+**21 templates** added under a "Lore Templates" book note:
 
 | Template | ID | Icon | Key Promoted Attributes |
 |---|---|---|---|
@@ -536,8 +538,12 @@ Changes made to the Trilium fork for AllCodex Core:
 | Session | `_template_session` | `bx-game` | sessionDate, players, sessionStatus, recap, hooks, gmNotes |
 | Quest | `_template_quest` | `bx-target-lock` | questStatus, questGiver, reward, location, hooks, consequences. Also carries `#quest` label. |
 | Scene | `_template_scene` | `bx-clapperboard` | location, participants, outcome, gmNotes |
-
-> **Template parity gap**: AllKnower defines 21 entity types in `src/types/lore.ts`. 6 types have no AllCodex Core template yet: organization, race, myth, cosmology, deity, religion. Brain dumps can still create notes of these types (AllKnower seeds templates via `POST /setup/seed-templates`), but the Portal's create/edit UI won't offer them in the picker until corresponding templates are added to `hidden_subtree_templates.ts` and `TemplatePicker.tsx`.
+| Organization | `_template_organization` | `bx-buildings` | orgType, leader, headquarters, membership, purpose, status |
+| Race / Species | `_template_race` | `bx-dna` | homeland, lifespan, traits, culture, relations |
+| Myth / Legend | `_template_myth` | `bx-book-bookmark` | mythType, origin, truthStatus, relatedEntities |
+| Cosmology | `_template_cosmology` | `bx-planet` | planes, cosmicForces, afterlife, creationMyth |
+| Deity | `_template_deity` | `bx-crown` | domain, alignment, symbol, worshippers, divineStatus |
+| Religion | `_template_religion` | `bx-church` | deity, tenets, practices, holyText, faithStatus |
 
 Each template carries the `#template` label and defines promoted attributes using Trilium's `label:fieldName = "promoted,alias=Display Name,single,text"` syntax. When a note's `~template` relation points to one of these, Trilium renders the promoted fields as a structured form.
 
@@ -580,12 +586,15 @@ src/
   auth/index.ts         better-auth setup (email/password, Bearer)
   db/client.ts          Prisma client with pretty-printed query logging
   etapi/client.ts       AllCodex Core ETAPI wrapper (createNote, tagNote, etc.)
+  logger.ts             Root logger instance (Winston-based with PnP support)
   pipeline/
+    azgaar.ts           Azgaar FMG map import logic
     brain-dump.ts       Main orchestrator (RAG -> LLM -> parse -> ETAPI)
     model-router.ts     Per-task model selection with OpenRouter fallbacks
     prompt.ts           System/user prompt builders + callLLM()
     parser.ts           Zod parser for LLM JSON responses
     relations.ts        Relationship suggestion pipeline logic
+    session-compactor.ts Tier 3 context compaction logic
     prompts/
       autocomplete.ts   System prompt for title autocomplete suggestions
       consistency.ts    System prompt for continuity editor
@@ -597,7 +606,10 @@ src/
   plugins/
     index.ts            CORS, rate limiting, background jobs
     auth-guard.ts       Session-based auth middleware
+    request-id.ts       UUID-based request tracing plugin
   rag/
+    chunk-compactor.ts  Tier 2 chunk summarization
+    chunk-dedup.ts      Embedding-distance based chunk deduplication
     embedder.ts         OpenRouter embedding calls (qwen/qwen3-embedding-8b, 4096-dim)
     lancedb.ts          Vector store (connect, upsert, query, delete)
     indexer.ts          Sync AllCodex Core -> LanceDB
@@ -608,9 +620,11 @@ src/
     suggest.ts          POST /suggest/relationships, GET /suggest/gaps, /suggest/autocomplete
     health.ts           GET /health (deep check: AllCodex Core + Postgres + LanceDB)
     setup.ts            POST /setup/seed-templates
-    import.ts           POST /import/system-pack
+    import.ts           POST /import/system-pack, /import/azgaar
   types/
     lore.ts             Zod schemas (21 entity types, 17 relationship types, brain dump result, etc.)
+  utils/
+    tokens.ts           Token counting utilities
 ```
 
 ### Database schema (PostgreSQL via Prisma)
@@ -626,6 +640,8 @@ src/
 | `rag_index_meta` | Tracks which notes are indexed (noteId, title, chunk count, model, embeddedAt) |
 | `app_config` | Key-value store for runtime settings (loreRootNoteId, etc.) |
 | `relation_history` | Log of applied relation suggestions (sourceNoteId, targetNoteId, type, description) |
+| `lore_sessions` | Multi-turn AI session states |
+| `lore_session_messages` | Individual messages within a lore session with token counts |
 
 ### LanceDB schema
 
@@ -681,7 +697,9 @@ app/
     lore/autolink/            Scan note text for unlinked title matches
     lore/mention-search/      @-mention autocomplete (search by title prefix)
     lore/move/                Move a note to a different parent branch
+    lore/note-search/         Search for lore notes by title/type
     lore/upload-image/        Upload image to AllCodex, return noteId
+    images/[id]/              Proxy for internal image notes
     brain-dump/route.ts       Proxy to AllKnower brain dump (with mode param)
     brain-dump/commit/route.ts  Proxy to AllKnower brain dump commit
     brain-dump/history/route.ts  Proxy to AllKnower brain dump history
@@ -697,6 +715,7 @@ app/
     search/route.ts           Dual-mode search proxy
     rag/route.ts              Proxy to AllKnower RAG query
     config/                   Credential storage/retrieval (cookies), portal settings
+    config/portal/            Portal-specific UI settings
 
 lib/
   etapi-server.ts         Server-side AllCodex ETAPI client (notes, attributes, branches, search — 16 functions)
@@ -704,6 +723,8 @@ lib/
   get-creds.ts            Reads credentials from cookies or env vars
   route-error.ts          Error handling (ServiceError class)
   sanitize.ts             sanitizeLoreHtml() — DOMPurify-based HTML sanitizer for lore content
+  lore-presentation.ts    Logic for lore presentation views
+  utils.ts                Global portal utilities
   stores/
     ai-tools-store.ts     Zustand store for consistency / gaps / relationships page state
     brain-dump-store.ts   Zustand store for brain dump draft text (persisted to localStorage), result display, and expanded row state
@@ -719,40 +740,35 @@ components/
   portal/StatblockCard.tsx    D&D-style statblock card (ability scores, HP, AC, CR, actions)
   portal/Breadcrumbs.tsx      Note ancestor path breadcrumb
   providers.tsx               TanStack Query + Tooltip providers
-  editor/LoreEditor.tsx       Novel (Tiptap wrapper) rich text editor (slash commands, bubble menu, @-mentions, tables, images)
-  editor/TemplatePicker.tsx   Template selection modal (15 types: 14 typed + General Lore)
+  editor/LoreEditor.tsx       BlockNote (Shadcn Edition) rich text editor with autolinker and mentions
+  editor/TemplatePicker.tsx   Template selection modal (21 types: 20 typed + General Lore)
   editor/PromotedFields.tsx   Template-specific attribute form (fullName, race, etc.)
   editor/AutolinkerDialog.tsx Scans note text for unlinked title matches
+  editor/mention.tsx          Lookup logic for lore mentions
+  editor/mention-extension.tsx BlockNote integration for @-mentions
   ui/                         shadcn components (badge, button, card, dialog, etc.)
 ```
 
 ### Editor architecture
 
-The lore editor (`LoreEditor.tsx`) wraps [Novel](https://novel.sh/) (which wraps Tiptap) with a worldbuilding-focused extension chain:
+The lore editor (`LoreEditor.tsx`) wraps [BlockNote](https://www.blocknotejs.org/) (Shadcn Edition) with a worldbuilding-focused integration:
 
 ```
-Novel (LoreEditor.tsx)
-  └─ Tiptap
-       ├─ StarterKit (paragraphs, bold, italic, headings, lists, code, blockquote)
-       ├─ Highlight, TaskList/TaskItem, Table/TableRow/TableCell
-       ├─ Image (drag-drop + paste → /api/lore/upload-image → AllCodex image note)
-       ├─ Link (autolink enabled)
-       ├─ Placeholder ("Begin inscribing your lore…")
-       ├─ mentionExtension (@-mention → /api/lore/mention-search → internal link)
-       └─ slashCommand (/ menu: heading, bullets, numbered, quote, code, image, table, todo)
+BlockNote (LoreEditor.tsx)
+  ├─ Default Blocks (paragraphs, headings, lists, quotes, tables)
+  ├─ Image Support (/api/lore/upload-image → AllCodex image note)
+  ├─ Autolink Lore (slash command → scanning dialog)
+  └─ Lore Mentions (@-trigger → note search dropdown)
 ```
 
 | File | Purpose |
 |---|---|
-| `editor/LoreEditor.tsx` | Main editor component. Configures Novel with extensions, bubble menu, slash command. Emits `onSave(html)` via debounced autosave. |
-| `editor/slash-command.tsx` | Slash command menu items and rendering (Cmdk-based popup) |
-| `editor/bubble-menu.tsx` | Floating toolbar on selection: bold, italic, strikethrough, link |
-| `editor/mention-extension.ts` | Tiptap `Mention` node that fetches `/api/lore/mention-search?q=` for autocomplete |
-| `editor/extensions.ts` | Assembles the Tiptap extension array |
-| `editor/image-upload.ts` | Handles image paste/drop, uploads to `/api/lore/upload-image`, returns URL |
-| `editor/TemplatePicker.tsx` | Modal for selecting lore type when creating/switching templates |
-| `editor/PromotedFields.tsx` | Dynamic form for template-specific attributes (fullName, race, etc.) |
-| `editor/AutolinkerDialog.tsx` | Scans HTML for entity title matches; offers batch-link insertion |
+| `editor/LoreEditor.tsx` | Main editor component. Integrates BlockNote, manages autosave, and handles lore-specific triggers. |
+| `editor/mention.tsx` | Search and menu logic for lore-aware autocomplete. |
+| `editor/mention-extension.tsx` | BlockNote schema extension for custom `@-mention` nodes. |
+| `editor/TemplatePicker.tsx` | Modal for selecting lore type (21 types available). |
+| `editor/PromotedFields.tsx` | Dynamic form for template-specific attributes. |
+| `editor/AutolinkerDialog.tsx` | Scans document for entity title matches; offers batch-link insertion. |
 
 ### Credential flow
 
@@ -835,7 +851,7 @@ graph TB
         Becca["Becca Cache<br/>(in-memory entity store)"]
         Shaca["Shaca Cache<br/>(share-only read cache)"]
         SQLite["SQLite Database<br/>notes | branches | attributes<br/>blobs | revisions | options"]
-        Templates[\"Lore Templates (15 implemented)<br/>Character | Location | Faction | Creature | Event<br/>Timeline | Manuscript | Statblock | Item | Spell<br/>Building | Language | Session | Quest | Scene\"]
+        Templates[\"Lore Templates (21 implemented)<br/>Character | Location | Faction | Creature | Event<br/>Timeline | Manuscript | Statblock | Item | Spell<br/>Building | Language | Session | Quest | Scene | Org | Race | Myth | Cosmology | Deity | Religion\"]
 
         ETAPI --> Becca
         ShareRenderer --> Shaca
