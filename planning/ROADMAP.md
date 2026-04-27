@@ -1,14 +1,14 @@
 # AllCodex Roadmap
 
-Date: March 31, 2026 · Updated: April 2, 2026
+Date: March 31, 2026 · Updated: April 27, 2026
 
 > **Single source of truth** for all AllCodex roadmap work across AllCodex Core, AllKnower, and AllCodex Portal.
 > When roadmap priorities conflict with component-level backlogs, this document wins.
 
 See also:
 
-- `docs/shared/allcodex_dm_first_scope.md` — product identity and scope boundary
-- `docs/shared/worldanvil_feature_matrix.md` — implementation-verified World Anvil parity audit
+- `docs/shared/planning/allcodex_dm_first_scope.md` — product identity and scope boundary
+- `docs/shared/analysis/worldanvil_feature_matrix.md` — implementation-verified World Anvil parity audit
 
 ---
 
@@ -412,7 +412,7 @@ Wrap each history entry in `<Link href={/brain-dump/${entry.id}}>`, add hover af
 
 ### Feature 6: Azgaar FMG Import ✅ SHIPPED
 
-> **Status:** Fully implemented. AllKnower pipeline (`src/pipeline/azgaar.ts`) parses Azgaar `.map` JSON, creates location/faction/religion notes via ETAPI, supports duplicate-skip and preview mode. Portal proxy at `/api/import/azgaar` with `?action=preview` for dry-run. Import page UI at `/import` supports drag-and-drop, preview, and result reporting.
+> **Status:** Fully implemented. AllKnower pipeline (`src/pipeline/azgaar.ts`) parses Azgaar `.map` JSON, creates location/faction/religion/race notes via ETAPI, supports duplicate-skip and preview mode. Portal parses uploaded `.map`/JSON files client-side and posts JSON to `/api/import/azgaar`; `?action=preview` forwards to the AllKnower preview route. Import page UI at `/import` supports drag-and-drop, preview, import options, and result reporting.
 
 **Problem:** No bulk import exists for world geography. Scope: Portal triggers, AllKnower processes.
 
@@ -424,33 +424,34 @@ Relevant fields from `.map` export:
 
 - `pack.burgs[]` — settlements with name, coordinates, state, capital, port, population, type
 - `pack.states[]` — kingdoms/nations
-- `pack.provinces[]` — provinces
 - `pack.religions[]` — religions
+- `pack.cultures[]` — cultures/species groups
+- `notes[]` — map notes / points of interest
 
 #### 6a. AllKnower import endpoint
 
 **AllKnower:** `POST /import/azgaar`
 
-- parse Azgaar JSON
-- create notes via ETAPI with `#lore`, `#loreType=location` or `#loreType=faction`
-- set promoted attributes and optional `#geolocation`
-- index new notes in LanceDB
-- return `{ created, updated, skipped, errors }` with note IDs
+- validate Azgaar JSON with `pack` entity arrays
+- create notes via ETAPI with templates and labels: states → factions, burgs → locations, religions → religions, cultures → races, map notes → locations
+- set promoted attributes plus `#importSource=azgaar` and optional `#geolocation`
+- skip duplicates by title when enabled
+- return `{ mapName, totals, states, burgs, religions, cultures, notes }` with per-entity created/skipped/error buckets
 
 #### 6b. Portal API proxy
 
 **New file:** `app/api/import/azgaar/route.ts`
 
-`POST` — accepts `multipart/form-data`, forwards file to AllKnower, returns result.
+`POST` — accepts JSON `{ mapData, parentNoteId?, options? }`, forwards to AllKnower, and returns the preview or import result. `?action=preview` forwards to `POST /import/azgaar/preview`.
 
 #### 6c. Import UI page
 
 **New file:** `app/(portal)/import/page.tsx`
 
-- drag-and-drop zone for `.map` file
-- client-side preview: table of entities that will be imported
-- checkboxes to select entity types (burgs, states, provinces, rivers, religions)
-- "Import" button, progress display, result summary with created note links
+- drag-and-drop zone for `.map`/JSON file
+- client-side JSON parsing and automatic preview
+- checkboxes to select entity types (states, burgs, religions, cultures, map notes) and duplicate-skip behavior
+- "Import" button, progress display, result summary with created/skipped/error counts
 
 #### 6d. Sidebar nav
 
@@ -458,13 +459,9 @@ Relevant fields from `.map` export:
 
 Add to Studio group: `{ href: "/import", icon: Upload, label: "Import" }`
 
-#### 6e. AllKnower client function
+#### 6e. AllKnower proxy behavior
 
-**File:** `lib/allknower-server.ts`
-
-```ts
-export async function importAzgaar(creds, file): Promise<ImportResult>
-```
+The Portal route calls AllKnower directly from `app/api/import/azgaar/route.ts`; there is no dedicated `lib/allknower-server.ts` helper for this path.
 
 ---
 
@@ -495,7 +492,7 @@ export async function importAzgaar(creds, file): Promise<ImportResult>
 | `app/api/lore/[id]/attributes/route.ts` | 2 | PUT promoted attributes on existing notes |
 | `app/api/brain-dump/history/[id]/route.ts` | 5 | Proxy to AllKnower history detail |
 | `app/(portal)/brain-dump/[id]/page.tsx` | 5 | Brain dump history detail page |
-| `app/api/import/azgaar/route.ts` | 6 | Proxy Azgaar file to AllKnower |
+| `app/api/import/azgaar/route.ts` | 6 | Proxy Azgaar map data to AllKnower |
 | `app/(portal)/import/page.tsx` | 6 | Azgaar import UI |
 
 ### Modified files
@@ -511,7 +508,7 @@ export async function importAzgaar(creds, file): Promise<ImportResult>
 | `app/globals.css` | 4 | Enhanced `.lore-content` styles |
 | `lib/get-creds.ts` | 1 | Add `getLoreRootNoteId()` |
 | `lib/etapi-server.ts` | 2 | Add `patchAttribute()` |
-| `lib/allknower-server.ts` | 5, 6 | Add history detail + Azgaar import functions |
+| `lib/allknower-server.ts` | 5 | Add history detail function |
 | `components/portal/AppSidebar.tsx` | 6 | Add Import nav entry |
 
 ### Dependencies to add

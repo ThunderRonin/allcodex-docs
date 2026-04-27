@@ -15,7 +15,7 @@ These files are checked out as a git submodule (`ThunderRonin/allcodex-docs`) in
 |---|---|
 | [reference/architecture.md](reference/architecture.md) | Full ecosystem architecture: services, data flows, internals, Mermaid diagram |
 | [reference/canonical-lore-schema.md](reference/canonical-lore-schema.md) | 21 lore entity types — single source of truth for AllKnower and Portal |
-| [reference/portal-api-reference.md](reference/portal-api-reference.md) | Complete Portal API route reference (45 routes) |
+| [reference/portal-api-reference.md](reference/portal-api-reference.md) | Complete Portal API route and method reference |
 
 ## Planning — Roadmaps & Feature Work
 
@@ -24,13 +24,13 @@ These files are checked out as a git submodule (`ThunderRonin/allcodex-docs`) in
 | [planning/ROADMAP.md](planning/ROADMAP.md) | DM-first feature roadmap — Phases 0–4 ✅, Phase 5 ⚠️ partial |
 | [planning/implementation_plan_phases_0_3.md](planning/implementation_plan_phases_0_3.md) | Detailed implementation plan for Phases A–G (all complete) |
 | [planning/allcodex_dm_first_scope.md](planning/allcodex_dm_first_scope.md) | Original product scope definition (still valid) |
-| [planning/remaining-features-plan.md](planning/remaining-features-plan.md) | AllKnower remaining features — only Azgaar import (Feature 3) left |
+| [planning/remaining-features-plan.md](planning/remaining-features-plan.md) | AllKnower remaining-features tracker — all three tracked features shipped |
 
 ## Analysis — Audits & Trackers
 
 | File | Purpose |
 |---|---|
-| [analysis/gap_analysis_vs_worldanvil.md](analysis/gap_analysis_vs_worldanvil.md) | World Anvil parity: P0–P8 shipped, maps/per-user-ACL/onboarding remaining |
+| [analysis/gap_analysis_vs_worldanvil.md](analysis/gap_analysis_vs_worldanvil.md) | World Anvil parity: P0–P8 shipped, visual maps/per-user ACL/embedded graphs/onboarding remaining |
 | [analysis/worldanvil_feature_matrix.md](analysis/worldanvil_feature_matrix.md) | Feature-by-feature audit against World Anvil pages |
 | [analysis/context_compaction_plan.md](analysis/context_compaction_plan.md) | AllKnower AI/RAG improvement backlog (future work) |
 

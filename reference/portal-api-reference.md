@@ -4,7 +4,7 @@
 > The Portal acts as a **secure proxy** — all backend calls happen server-side.
 > The browser never sees AllCodex ETAPI tokens or AllKnower Bearer tokens.
 
-Date: April 3, 2026
+Date: April 27, 2026
 
 ---
 
@@ -93,6 +93,7 @@ Browser  →  POST /api/config/connect (or /allcodex-login, /allknower-login)
 | `PUT` | `/api/lore/[id]/content` | Update the HTML content of a note. Body: raw HTML string. Returns 204. | AllCodex ETAPI |
 | `GET` | `/api/lore/[id]/preview?mode=gm\|player` | Get sanitized HTML content. `gm` mode uses `sanitizeLoreHtml()`, `player` mode uses `sanitizePlayerView()` (strips `gmOnly` content). | AllCodex ETAPI |
 | `GET` | `/api/lore/[id]/image` | Proxy image binary from AllCodex. Cached 1 day. | AllCodex ETAPI |
+| `GET` | `/api/images/[id]/[filename]` | Redirect compatibility route for editor image URLs. Forwards to `/api/lore/[id]/image`. | None (local redirect) |
 | `GET` | `/api/lore/[id]/backlinks` | Get notes that link to this note (inbound relations + content links). | AllCodex ETAPI |
 | `GET` | `/api/lore/[id]/breadcrumbs` | Get the ancestor branch path for breadcrumb navigation. | AllCodex ETAPI |
 
@@ -122,6 +123,7 @@ Binary image body. Set `x-vercel-filename` header for the file name.
 | Method | Path | Description | Backend |
 |--------|------|-------------|---------|
 | `GET` | `/api/lore/mention-search?q=<text>` | Autocomplete for `@`-mentions. Min 2 chars. Returns up to 8 results. | AllCodex ETAPI + AllKnower |
+| `GET` | `/api/lore/note-search?q=<text>&type=<type>` | Title/type note search for picker-style UI. Min 2 chars. Returns up to 12 results. | AllCodex ETAPI |
 | `POST` | `/api/lore/autolink` | Scan a text block for lore title matches. Cached 60s. | AllCodex ETAPI |
 | `GET` | `/api/search?q=<query>&mode=etapi\|rag` | Dual-mode search. `etapi` = ETAPI full-text/attribute, `rag` = AllKnower semantic search. | AllCodex ETAPI or AllKnower |
 
@@ -276,11 +278,11 @@ Each note includes: `noteId`, `title`, `isDraft`, `isGmOnly`, `shareAlias`, `isP
 | Method | Path | Description | Backend |
 |--------|------|-------------|---------|
 | `POST` | `/api/import/system-pack` | Import a system pack (SRD, monster manual, etc.) | AllKnower |
-| `POST` | `/api/import/azgaar` | Import an Azgaar Fantasy Map Generator JSON file. Use `?action=preview` to preview entities without creating notes; omit the parameter to execute the full import. AllKnower parses the map JSON, creates location/faction/religion notes, skips duplicates, and returns created/skipped counts. | AllKnower |
+| `POST` | `/api/import/azgaar` | Import parsed Azgaar Fantasy Map Generator JSON. Body: `{ mapData, parentNoteId?, options? }`. Use `?action=preview` to preview entities without creating notes; omit the parameter to execute the full import. | AllKnower |
 
 The system pack request body is the full system pack JSON. AllKnower creates statblock notes with `#statblock` labels, skips duplicates by title, and returns created/skipped counts.
 
-The Azgaar import accepts the raw `.map` JSON export. Preview mode returns a summary of entities that would be created without writing anything.
+The Azgaar import page accepts `.map`/JSON files in the browser, parses them client-side, and sends the parsed JSON to this route. Preview mode returns a summary of entities that would be created without writing anything. Full import creates location, faction, religion, race, and map-note entries, skips duplicates by title when enabled, and returns per-entity created/skipped/error buckets.
 
 ---
 

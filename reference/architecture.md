@@ -186,7 +186,10 @@ All LLM and embedding calls go through OpenRouter. Each task has a configurable 
 | `GET` | `/suggest/gaps` | Detect underdeveloped lore areas |
 | `GET` | `/suggest/autocomplete?q=...` | Title autocomplete (3-phase: prefix → RAG → LLM) |
 | `POST` | `/import/system-pack` | Import SRD/system JSON packs as statblock notes |
+| `POST` | `/import/azgaar` | Import an Azgaar Fantasy Map Generator export |
+| `POST` | `/import/azgaar/preview` | Preview an Azgaar map export |
 | `POST` | `/setup/seed-templates` | Create lore templates in AllCodex |
+| `POST` | `/config/allcodex` | Persist AllCodex URL/token in AllKnower app config |
 | `GET` | `/health` | Service health (AllCodex, Postgres, LanceDB) |
 | `POST` | `/api/auth/sign-up/email` | Register a new AllKnower account |
 | `POST` | `/api/auth/sign-in/email` | Login and receive a bearer token |
@@ -616,6 +619,7 @@ src/
     health.ts           GET /health (deep check: AllCodex Core + Postgres + LanceDB)
     setup.ts            POST /setup/seed-templates
     import.ts           POST /import/system-pack, POST /import/azgaar/preview, POST /import/azgaar, GET /import/azgaar/preview (stub)
+    config.ts           POST /config/allcodex
   types/
     lore.ts             Zod schemas (21 entity types, 17 relationship types, brain dump result, etc.)
 ```
@@ -631,7 +635,7 @@ src/
 | `brain_dump_history` | Log of every brain dump (raw text, `rawTextHash` for idempotency dedup, parsed JSON, created/updated note ID arrays, model, token count) |
 | `llm_call_log` | Append-only log of every LLM call (task, model, tokens, latencyMs, requestId) |
 | `rag_index_meta` | Tracks which notes are indexed (noteId, title, chunk count, model, embeddedAt) |
-| `app_config` | Key-value store for runtime settings (loreRootNoteId, etc.) |
+| `app_config` | Key-value store for AllKnower runtime settings, including AllCodex URL/token |
 | `relation_history` | Log of applied relation suggestions (sourceNoteId, targetNoteId, type, description) |
 | `lore_session` | Session compaction (Tier 3) — conversation session metadata (userId, title, createdAt, compactedAt) |
 | `lore_session_message` | Individual messages within a lore session (role, content, tokenCount, sessionId FK) |
@@ -690,7 +694,9 @@ app/
     lore/autolink/            Scan note text for unlinked title matches
     lore/mention-search/      @-mention autocomplete (search by title prefix)
     lore/move/                Move a note to a different parent branch
+    lore/note-search/         Search for lore notes by title/type
     lore/upload-image/        Upload image to AllCodex, return noteId
+    images/[id]/[filename]/   Redirect editor image URLs to lore image proxy
     brain-dump/route.ts       Proxy to AllKnower brain dump (with mode param)
     brain-dump/commit/route.ts  Proxy to AllKnower brain dump commit
     brain-dump/history/route.ts  Proxy to AllKnower brain dump history

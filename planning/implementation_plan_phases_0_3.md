@@ -27,7 +27,7 @@ Implement the full DM-first roadmap from Phase 0 through Phase 3, deferring Azga
 **Already built (don't re-build):**
 - `TemplatePicker` (12 templates) in `components/editor/TemplatePicker.tsx`
 - `PromotedFields` in `components/editor/PromotedFields.tsx`
-- `LoreEditor` (Novel/Tiptap) in `components/editor/LoreEditor.tsx`
+- `LoreEditor` (BlockNote) in `components/editor/LoreEditor.tsx`
 - Edit page: full attribute CRUD, draft toggle, template selection
 - New page: template picker + promoted fields + content editor + parent ID
 - Lore API `POST /api/lore` handles attributes, loreType, templateId

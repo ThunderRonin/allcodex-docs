@@ -163,14 +163,14 @@ Effort is rated: **S** (days), **M** (1–2 weeks), **L** (3+ weeks).
 | **P6** | Public/Private sharing (note-level) | `M` | ✅ Shipped | — |
 | **P7** | Statblock Library + System Pack Import | `M` | ✅ Shipped | — |
 | **P8** | Session Workspace + Quests | `M` | ✅ Shipped | — |
-| — | Interactive Maps (visual layer) | `L` | 🔲 Pending | Azgaar Import |
-| — | Azgaar Import (data layer) | `M` | 🔲 Pending | — |
+| — | Interactive Maps (visual layer) | `L` | 🔲 Pending | Azgaar Import (shipped) |
+| — | Azgaar Import (data layer) | `M` | ✅ Shipped | — |
 | — | Per-user access control | `L` | 🔲 Pending | Sharing |
 | — | Embedded graphs (family tree, diplomacy) | `M` | 🔲 Pending | Relationship data |
 | — | Onboarding wizard | `S–M` | 🔲 Pending | Stable UX |
 
 > [!NOTE]
-> **P0–P8 are all shipped.** The essential authoring, session runtime, and player sharing gaps are closed. Remaining items are maps, per-user access, embedded graphs, and onboarding.
+> **P0–P8 and Azgaar import are shipped.** The essential authoring, session runtime, player sharing, and map-data import gaps are closed. Remaining items are visual maps, per-user access, embedded graphs, and onboarding.
 
 ---
 

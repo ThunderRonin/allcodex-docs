@@ -10,9 +10,9 @@ The goal is not to describe every feature the platform could support. The goal i
 
 See also:
 
-- `docs/shared/allcodex_dm_first_roadmap.md` for the canonical cross-service roadmap
-- `docs/shared/worldanvil_feature_matrix.md` for the implementation-verified parity audit
-- `docs/shared/gap_analysis_vs_worldanvil.md` for the older high-level gap note
+- `docs/shared/planning/ROADMAP.md` for the canonical cross-service roadmap
+- `docs/shared/analysis/worldanvil_feature_matrix.md` for the implementation-verified parity audit
+- `docs/shared/analysis/gap_analysis_vs_worldanvil.md` for the older high-level gap note
 
 ---
 

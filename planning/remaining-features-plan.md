@@ -20,102 +20,79 @@ Brain dump pipeline (`src/pipeline/brain-dump.ts`) now calls `suggestRelationsFo
 
 ## ✅ Feature 3: Azgaar Fantasy Map Generator Import — **SHIPPED**
 
-Implemented in `src/pipeline/azgaar.ts` (parser + note creators) and `src/routes/import.ts` (`POST /import/azgaar` with `?action=preview` for dry-run). Portal proxy at `app/api/import/azgaar/route.ts`. Import page UI supports drag-and-drop, entity preview, duplicate-skip, and result reporting.
+Implemented in `src/pipeline/azgaar.ts` (parser + note creators) and `src/routes/import.ts` (`POST /import/azgaar`, `POST /import/azgaar/preview`, plus a URL-preview stub). Portal proxy at `app/api/import/azgaar/route.ts`. Import page UI supports drag-and-drop, client-side parsing, entity preview, duplicate-skip, import options, and result reporting.
 
-**What:** A new endpoint that accepts an Azgaar FMG JSON export and bulk-creates Location (and optionally Faction) notes in AllCodex via ETAPI.
+**What:** An endpoint that accepts parsed Azgaar FMG JSON and bulk-creates AllCodex lore notes via ETAPI.
 
-**Why:** Azgaar exports contain structured data for every burg (settlement), state (nation), river, and region. That can be hundreds of entries that would take hours to create by hand.
+**Why:** Azgaar exports contain structured data for settlements, nations, religions, cultures, and map notes. That can be hundreds of entries that would take hours to create by hand.
 
-### Route
+### Route Contracts
 
+```http
+POST /import/azgaar/preview
+Content-Type: application/json
 ```
+
+```json
+{ "mapData": { "info": { "mapName": "All Reach" }, "pack": { "burgs": [], "states": [] } } }
+```
+
+```http
 POST /import/azgaar
-Content-Type: multipart/form-data
-Body: file (the .json export from Azgaar FMG)
+Content-Type: application/json
 ```
-
-### Azgaar JSON Structure (relevant fields)
 
 ```json
 {
-  "info": { "mapName": "All Reach", ... },
-  "burgs": [
-    { "i": 1, "name": "Solara", "state": 3, "x": 540.2, "y": 312.8,
-      "population": 28400, "capital": 1, "type": "Large City" }
-  ],
-  "states": [
-    { "i": 3, "name": "Übermenschreich", "capital": 1, "color": "#4a7c59",
-      "type": "Kingdom", "center": 8842, "diplomacy": [...] }
-  ],
-  "rivers": [
-    { "i": 1, "name": "River Lume", "mouth": 4521, "source": 7832 }
-  ],
-  "cells": { "biome": [...], "culture": [...] }
+  "mapData": { "info": { "mapName": "All Reach" }, "pack": { "burgs": [], "states": [] } },
+  "parentNoteId": "root",
+  "options": {
+    "importStates": true,
+    "importBurgs": true,
+    "importReligions": true,
+    "importCultures": true,
+    "importNotes": true,
+    "skipDuplicates": true
+  }
 }
 ```
 
-### Implementation Steps
+The Portal accepts `.map`/JSON files in the browser, parses them client-side, and sends the parsed JSON to `/api/import/azgaar`. The Portal route does not send multipart data to AllKnower.
 
-- [ ] **3a.** Create `src/pipeline/azgaar.ts`:
-  - Define TypeScript types for the Azgaar JSON subset we consume (burgs, states, rivers — skip cells/biomes for now):
-    - `AzgaarBurg` — `{ i, name, state, x, y, population, capital, type }`
-    - `AzgaarState` — `{ i, name, capital, type, diplomacy }`
-    - `AzgaarRiver` — `{ i, name, mouth, source }`
-  - `parseAzgaarExport(json: unknown): { burgs, states, rivers }` — validates and extracts relevant arrays
-  - `importBurgs(burgs, stateMap, loreRootNoteId)` — for each burg:
-    1. `createNote({ parentNoteId, title: burg.name, type: "text", content: generated HTML })`
-    2. `tagNote(noteId, "lore")` + `tagNote(noteId, "loreType", "location")`
-    3. `createAttribute` for promoted fields: `locationType`, `region` (from state name), `population`, `ruler`
-    4. `createAttribute({ type: "label", name: "geolocation", value: "${burg.x},${burg.y}" })` for map pins
-    5. `setNoteTemplate(noteId, TEMPLATE_ID_MAP.location)` (best-effort, already try/catch'd)
-  - `importStates(states, loreRootNoteId)` — for each state:
-    1. Create as faction note
-    2. Tag `loreType: faction`, set `factionType` to state type
-    3. Link capital burg via relation (if burg note was already created)
-  - `importRivers(rivers, loreRootNoteId)` — optional, creates location notes with `locationType: "river"`
+### Current Entity Mapping
 
-- [ ] **3b.** Add `POST /import/azgaar` to the **existing** `src/routes/import.ts` file (alongside `/import/system-pack`):
-  - Accept `multipart/form-data` with a single JSON file field
-  - Parse JSON, call `parseAzgaarExport`
-  - Call `importBurgs`, `importStates`, and optionally `importRivers`
-  - Return `{ burgsCreated, statesCreated, riversCreated, skipped, errors }`
+| Azgaar data | AllCodex note type | Template |
+|---|---|---|
+| `pack.states[]` | faction | `_template_faction` |
+| `pack.burgs[]` | location | `_template_location` |
+| `pack.religions[]` | religion | `_template_religion` |
+| `pack.cultures[]` | race | `_template_race` |
+| `notes[]` | location | `_template_location` |
 
-  > No new route file needed — `importRoute` is already registered in `src/app.ts`.
+Each created note gets `#lore`, `#loreType`, and `#importSource=azgaar`. Location-like entries include `#geolocation` when coordinates are available. Duplicate detection is title-based when `skipDuplicates` is enabled.
 
-- [ ] **3c.** Add `ImportHistory` model to Prisma schema:
-  ```prisma
-  model ImportHistory {
-    id           String   @id @default(cuid())
-    source       String   // "azgaar"
-    fileName     String
-    notesCreated String[]
-    summary      Json
-    createdAt    DateTime @default(now())
-    @@map("import_history")
-  }
-  ```
+### Result Shape
 
-- [ ] **3d.** Add `azgaarImportParentNoteId` to `AppConfig`
-
-- [ ] **3e.** Add a `dryRun: boolean` query param.
-
-### Generated HTML Template for Burgs
-
-```html
-<h2>{burg.name}</h2>
-<p><strong>Type:</strong> {burg.type}</p>
-<p><strong>State:</strong> {stateName}</p>
-<p><strong>Population:</strong> {burg.population.toLocaleString()}</p>
-<p>{burg.capital ? "Capital city of " + stateName : ""}</p>
+```json
+{
+  "mapName": "All Reach",
+  "totals": { "created": 12, "skipped": 3, "errors": 0 },
+  "states": { "created": [], "skipped": [], "errors": [] },
+  "burgs": { "created": [], "skipped": [], "errors": [] },
+  "religions": { "created": [], "skipped": [], "errors": [] },
+  "cultures": { "created": [], "skipped": [], "errors": [] },
+  "notes": { "created": [], "skipped": [], "errors": [] }
+}
 ```
 
 ### Files Touched
 
 | File | Change |
 |---|---|
-| `src/pipeline/azgaar.ts` | New — parser + importers |
-| `src/routes/import.ts` | **Existing** — add `POST /import/azgaar` alongside `POST /import/system-pack` |
-| `prisma/schema.prisma` | Add `ImportHistory` model |
+| `src/pipeline/azgaar.ts` | Parser, preview, entity mapping, note creation |
+| `src/routes/import.ts` | `POST /import/azgaar`, `POST /import/azgaar/preview`, URL-preview stub |
+| `app/api/import/azgaar/route.ts` | Portal proxy for preview and full import |
+| `app/(portal)/import/page.tsx` | Upload, preview, options, and result UI |
 
 ---
 
@@ -131,13 +108,6 @@ Feature 3: Azgaar import       ✅ shipped
 
 ---
 
-## Prisma Migrations
+## Persistence Notes
 
-Feature 3 adds one new model. Run after all schema changes:
-
-```bash
-bunx prisma migrate dev --name "add-import-history"
-```
-
-New model:
-- `ImportHistory` for logging Azgaar imports (Feature 3)
+Feature 3 did not ship an `ImportHistory` model or Prisma migration. Import result reporting is request-scoped: AllKnower returns the created/skipped/error buckets to the Portal, and the Portal displays them immediately. Persistent import history remains future work if it becomes useful.

@@ -189,6 +189,7 @@ All LLM and embedding calls go through OpenRouter. Each task has a configurable 
 | `POST` | `/import/azgaar` | Import an Azgaar Fantasy Map Generator export |
 | `POST` | `/import/azgaar/preview` | Preview an Azgaar map export |
 | `POST` | `/setup/seed-templates` | Create lore templates in AllCodex |
+| `POST` | `/config/allcodex` | Persist AllCodex URL/token in AllKnower app config |
 | `GET` | `/health` | Service health (AllCodex, Postgres, LanceDB) |
 | `POST` | `/api/auth/sign-up/email` | Register a new AllKnower account |
 | `POST` | `/api/auth/sign-in/email` | Login and receive a bearer token |
@@ -216,7 +217,7 @@ A Next.js 16 app with React 19. It is the only thing the user interacts with. Th
 | Data fetching | TanStack Query (30s stale time, 1 retry) |
 | State | `useState` for ephemeral component state; **Zustand** for shared AI tool state (`useAIToolsStore`) and brain dump state (`useBrainDumpStore`) |
 | UI components | shadcn/ui (Radix primitives + Tailwind) |
-| Editor | Novel v1 (`LoreEditor`) — Novel-wrapped Tiptap with slash commands, bubble menu, `@`-mentions, tables, images |
+| Editor | BlockNote (`LoreEditor`) — `@blocknote/shadcn`-themed block editor with slash commands, `@`-mentions, inline autolinker, tables, images |
 | Dark theme | Cinzel (headings) + Crimson Text (body) fonts |
 | Drawer/sheets | Vaul |
 
@@ -226,9 +227,9 @@ A Next.js 16 app with React 19. It is the only thing the user interacts with. Th
 |---|---|---|
 | `/` | Dashboard | Stat cards, recent entries grid, quick actions, system status |
 | `/lore` | Lore Browser | Two-panel layout: `LoreTree` sidebar (type-category filter with counts) + filterable card grid. |
-| `/lore/new` | New Entry | `TemplatePicker` modal to select a lore type, then title + `LoreEditor` (Novel/Tiptap) + `PromotedFields` for template-specific attributes. |
+| `/lore/new` | New Entry | `TemplatePicker` modal to select a lore type, then title + `LoreEditor` (BlockNote) + `PromotedFields` for template-specific attributes. |
 | `/lore/[id]` | Note Detail | Two-column: rendered content + sidebar with labels, relations, `RelationshipGraph` (on-demand Mermaid diagram of existing + AI-suggested connections with per-suggestion Apply buttons), and "Suggest Connections" button. |
-| `/lore/[id]/edit` | Edit Note | Title, `TemplatePicker` (template switcher), `LoreEditor` (Novel/Tiptap rich text), `PromotedFields`, draft toggle (`#draft` label), delete with confirmation. |
+| `/lore/[id]/edit` | Edit Note | Title, `TemplatePicker` (template switcher), `LoreEditor` (BlockNote rich text), `PromotedFields`, draft toggle (`#draft` label), delete with confirmation. |
 | `/brain-dump` | Brain Dump | Textarea for raw text. Shows results (created/updated entities) + history. State managed by `useBrainDumpStore`. |
 | `/search` | Search | Dual-mode: Semantic (RAG via AllKnower) or Attribute (ETAPI query via AllCodex) |
 | `/ai/consistency` | Consistency | Optional note IDs input. Runs scan, shows issues by severity. State managed by `useAIToolsStore`. |
@@ -620,7 +621,8 @@ src/
     suggest.ts          POST /suggest/relationships, GET /suggest/gaps, /suggest/autocomplete
     health.ts           GET /health (deep check: AllCodex Core + Postgres + LanceDB)
     setup.ts            POST /setup/seed-templates
-    import.ts           POST /import/system-pack, /import/azgaar
+    import.ts           POST /import/system-pack, POST /import/azgaar/preview, POST /import/azgaar, GET /import/azgaar/preview (stub)
+    config.ts           POST /config/allcodex
   types/
     lore.ts             Zod schemas (21 entity types, 17 relationship types, brain dump result, etc.)
   utils/
@@ -638,7 +640,7 @@ src/
 | `brain_dump_history` | Log of every brain dump (raw text, `rawTextHash` for idempotency dedup, parsed JSON, created/updated note ID arrays, model, token count) |
 | `llm_call_log` | Append-only log of every LLM call (task, model, tokens, latencyMs, requestId) |
 | `rag_index_meta` | Tracks which notes are indexed (noteId, title, chunk count, model, embeddedAt) |
-| `app_config` | Key-value store for runtime settings (loreRootNoteId, etc.) |
+| `app_config` | Key-value store for AllKnower runtime settings, including AllCodex URL/token |
 | `relation_history` | Log of applied relation suggestions (sourceNoteId, targetNoteId, type, description) |
 | `lore_sessions` | Multi-turn AI session states |
 | `lore_session_messages` | Individual messages within a lore session with token counts |
@@ -673,14 +675,14 @@ app/
     lore/page.tsx         Filterable card grid
     lore/new/page.tsx     TemplatePicker -> LoreEditor + PromotedFields (create flow)
     lore/[id]/page.tsx    Detail view (content + sidebar) + RelationshipGraph
-    lore/[id]/edit/       Edit title + LoreEditor (Tiptap) + TemplatePicker + PromotedFields + draft toggle
+    lore/[id]/edit/       Edit title + LoreEditor (BlockNote) + TemplatePicker + PromotedFields + draft toggle
     search/page.tsx       Dual-mode: semantic (RAG) or attribute (ETAPI)
     quests/page.tsx       Quest tracker (status filter, completion toggle, quest cards)
     session/page.tsx      Live session workspace (recap, timer, statblock lookup, quick-create)
     timeline/page.tsx     Chronological event timeline with in-world dates
     statblocks/page.tsx   Statblock library (CR filter, search, full stat cards)
     shared/page.tsx       Shared content browser (share toggles, passwords, preview links)
-    import/page.tsx       System pack import (preview, duplicate-skip, result reporting)
+    import/page.tsx       System pack + Azgaar Fantasy Map Generator import (preview, duplicate-skip, result reporting)
     ai/consistency/       Consistency checker UI (state: useAIToolsStore)
     ai/gaps/              Gap detector UI (state: useAIToolsStore)
     ai/relationships/     Relationship suggester + apply UI (state: useAIToolsStore)
@@ -699,12 +701,13 @@ app/
     lore/move/                Move a note to a different parent branch
     lore/note-search/         Search for lore notes by title/type
     lore/upload-image/        Upload image to AllCodex, return noteId
-    images/[id]/              Proxy for internal image notes
+    images/[id]/[filename]/   Redirect editor image URLs to lore image proxy
     brain-dump/route.ts       Proxy to AllKnower brain dump (with mode param)
     brain-dump/commit/route.ts  Proxy to AllKnower brain dump commit
     brain-dump/history/route.ts  Proxy to AllKnower brain dump history
     brain-dump/history/[id]/route.ts  Proxy to AllKnower brain dump detail
     import/system-pack/route.ts  Proxy to AllKnower system pack import
+    import/azgaar/route.ts       Proxy to AllKnower Azgaar import (preview + full import)
     quests/route.ts           Quest CRUD proxy
     statblocks/route.ts       Statblock query proxy
     timeline/route.ts         Timeline event query proxy
