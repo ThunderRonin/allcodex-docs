@@ -163,7 +163,7 @@ All LLM and embedding calls go through OpenRouter. Each task has a configurable 
 | Gap Detection | `aion-labs/aion-2.0` | Coverage analysis |
 | Embeddings | `qwen/qwen3-embedding-8b` | 4096-dim vectors for semantic search |
 | Autocomplete | `liquid/lfm-24b` | Instant title suggestions |
-| Rerank | `openai/gpt-5-nano` | Re-ranks RAG results by relevance |
+| Rerank | `cohere/rerank-4-pro` | Re-ranks RAG results via OpenRouter native `/rerank` endpoint (not chat completions) |
 
 > **Note:** All model defaults can be overridden in `.env` via `BRAIN_DUMP_MODEL`, `CONSISTENCY_MODEL`, `SUGGEST_MODEL`, `GAP_DETECT_MODEL`, `AUTOCOMPLETE_MODEL`, `RERANK_MODEL` (each with `_FALLBACK_1` / `_FALLBACK_2` variants). Setting `USE_OPENROUTER_AUTO=true` routes all tasks through `openrouter/auto`.
 
@@ -183,7 +183,7 @@ All LLM and embedding calls go through OpenRouter. Each task has a configurable 
 | `POST` | `/consistency/check` | RAG-augmented consistency scan |
 | `POST` | `/suggest/relationships` | Suggest narrative connections |
 | `POST` | `/suggest/relationships/apply` | Persist approved suggestions as AllCodex relation attributes |
-| `GET` | `/suggest/gaps` | Detect underdeveloped lore areas |
+| `GET\|POST` | `/suggest/gaps` | Detect underdeveloped lore areas (POST preferred — avoids caching on long AI payloads) |
 | `GET` | `/suggest/autocomplete?q=...` | Title autocomplete (3-phase: prefix → RAG → LLM) |
 | `POST` | `/import/system-pack` | Import SRD/system JSON packs as statblock notes |
 | `POST` | `/import/azgaar` | Import an Azgaar Fantasy Map Generator export |
@@ -215,10 +215,10 @@ A Next.js 16 app with React 19. It is the only thing the user interacts with. Th
 | Framework | Next.js 16 (App Router) |
 | React | 19 with React Compiler |
 | Data fetching | TanStack Query (30s stale time, 1 retry) |
-| State | `useState` for ephemeral component state; **Zustand** for shared AI tool state (`useAIToolsStore`) and brain dump state (`useBrainDumpStore`) |
-| UI components | shadcn/ui (Radix primitives + Tailwind) |
+| State | `useState` for ephemeral component state; **Zustand** for shared AI tool state (`useAIToolsStore`), brain dump state (`useBrainDumpStore`), and copilot conversation state (`useCopilotStore`) |
+| UI components | shadcn/ui (Radix primitives + Tailwind) + cmdk (command palette) |
 | Editor | BlockNote (`LoreEditor`) — `@blocknote/shadcn`-themed block editor with slash commands, `@`-mentions, inline autolinker, tables, images |
-| Dark theme | Cinzel (headings) + Crimson Text (body) fonts |
+| Theme | Light (parchment) and dark (grimoire) via `next-themes` — Cinzel headings, Crimson Text body |
 | Drawer/sheets | Vaul |
 
 ### Pages
@@ -321,7 +321,7 @@ This is the core feature. The user pastes raw worldbuilding text and gets struct
 1. User optionally enters note IDs, clicks "Run".
 2. Portal calls `POST /api/ai/consistency` -> AllKnower `POST /consistency/check`.
 3. **Explicit mode** (note IDs provided): AllKnower fetches those notes from AllCodex, strips HTML to plain text, sends full content to the LLM.
-4. **Semantic sampling mode** (no note IDs): AllKnower runs 4 semantic RAG probes (`characters/relationships`, `world rules/magic`, `timeline/events`, `contradictions/anomalies`) to surface the most consistency-relevant lore entries. Up to 2,000 chars per note are included.
+4. **Semantic sampling mode** (no note IDs): AllKnower runs a single consolidated RAG query to surface the top 8 most consistency-relevant lore entries. Up to 600 chars per note are included (bounded to keep the LLM call under the proxy timeout ceiling).
 5. Sends sampled notes to `moonshotai/kimi-k2.5` with a system prompt asking for contradictions, timeline conflicts, orphaned references, and naming issues.
 6. Returns `{ issues[], summary }` with severity and affected note IDs.
 
@@ -341,9 +341,9 @@ This is the core feature. The user pastes raw worldbuilding text and gets struct
 ### Gap Detection
 
 1. User clicks "Scan for Gaps".
-2. Portal calls `GET /api/ai/gaps` -> AllKnower `GET /suggest/gaps`.
-3. AllKnower fetches all `#lore` notes from AllCodex, counts them by `#loreType`.
-4. Sends the type distribution to Grok for analysis.
+2. Portal calls `POST /api/ai/gaps` -> AllKnower `POST /suggest/gaps`.
+3. AllKnower fetches all `#lore` notes from AllCodex, counts them by `#loreType`, and builds a lore census with promoted attribute snippets (max 8 entries per type, max 3 attributes each).
+4. Sends the census to the gap-detect model with `maxTokens=700`, `temperature=0.1`, `timeoutMs=120_000`.
 5. Returns `{ gaps[], summary, typeCounts }`.
 
 ---
@@ -377,9 +377,7 @@ RAG keeps LanceDB in sync with AllCodex so semantic search works.
 2. The query text is embedded into a vector.
 3. LanceDB performs ANN search with explicit cosine distance metric.
 4. A base threshold of 0.3 similarity filters out low-quality matches.
-5. **Hybrid reranking** is applied based on query complexity:
-   - Simple queries (≤8 words, no relational connectives) → Xenova cross-encoder (local, fast)
-   - Complex queries (>8 words or contains how/why/between/etc.) → LLM-as-a-Judge
+5. **Reranking** via the OpenRouter native `/rerank` endpoint (`cohere/rerank-4-pro`). Faster and more accurate than the previous Xenova cross-encoder / LLM-as-a-Judge dual-strategy approach. Falls back gracefully to raw vector similarity on any error or timeout (30s ceiling).
 6. Results are deduplicated per note (highest-scoring chunk wins), then sliced to `topK`.
 7. Returns chunks ranked by score, with noteId, noteTitle, content, and score.
 
@@ -723,6 +721,7 @@ lib/
   stores/
     ai-tools-store.ts     Zustand store for consistency / gaps / relationships page state
     brain-dump-store.ts   Zustand store for brain dump draft text (persisted to localStorage), result display, and expanded row state
+    copilot-store.ts      Zustand store for article copilot — one conversation context per noteId, persists across page navigation; controls sheet open state and activeNoteId
 
 components/
   portal/AppSidebar.tsx       Navigation (Chronicle, Studio, AI Tools, System)
@@ -741,7 +740,12 @@ components/
   portal/StepIndicator.tsx    Multi-step progress indicator (used in import/setup flows)
   portal/TableOfContents.tsx  Auto-generated TOC sidebar from note heading structure
   portal/StatusBadge.tsx      Badge component for status indicators (draft, shared, etc.)
-  providers.tsx               TanStack Query + Tooltip providers
+  portal/ArticleCopilot.tsx   Copilot chat sheet — conversation UI, proposal review, apply with per-target selection; state from useCopilotStore
+  portal/CopilotProvider.tsx  Mounts ArticleCopilot once at layout level so the sheet persists across page navigations
+  portal/CopilotTrigger.tsx   Lightweight button that sets activeNoteId in the store and opens the copilot sheet
+  portal/CommandPalette.tsx   cmdk-backed global command palette mounted in the portal layout
+  portal/ThemeToggle.tsx      Light/dark toggle button (uses next-themes useTheme)
+  providers.tsx               TanStack Query + Tooltip + ThemeProvider (next-themes, defaultTheme="dark")
   editor/LoreEditor.tsx       BlockNote rich text editor (slash commands, `@`-mentions, inline autolinker, tables, images)
   editor/TemplatePicker.tsx   Template selection modal (22 options: 21 lore types + General Lore)
   editor/PromotedFields.tsx   Template-specific attribute form (fullName, race, etc.)
@@ -865,7 +869,7 @@ graph TB
     end
 
     subgraph ExternalAPIs["External Services"]
-        OpenRouter["OpenRouter API<br/>Brain Dump: x-ai/grok-4.1-fast<br/>Consistency: moonshotai/kimi-k2.5<br/>Suggest/Gap: aion-labs/aion-2.0<br/>Autocomplete: liquid/lfm-24b | Rerank: openai/gpt-5-nano<br/>Embed: qwen/qwen3-embedding-8b (4096-dim)"]
+        OpenRouter["OpenRouter API<br/>Brain Dump: x-ai/grok-4.1-fast<br/>Consistency: moonshotai/kimi-k2.5<br/>Suggest/Gap: aion-labs/aion-2.0<br/>Autocomplete: liquid/lfm-24b | Rerank: cohere/rerank-4-pro (/rerank)<br/>Embed: qwen/qwen3-embedding-8b (4096-dim)"]
     end
 
     subgraph Storage["AllKnower Storage"]

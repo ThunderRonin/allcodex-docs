@@ -184,9 +184,11 @@ Returns:
 | Method | Path | Description | Backend |
 |--------|------|-------------|---------|
 | `POST` | `/api/ai/consistency` | Run a RAG-augmented consistency scan. | AllKnower |
-| `GET` | `/api/ai/gaps` | Detect underdeveloped lore areas. | AllKnower |
+| `GET\|POST` | `/api/ai/gaps` | Detect underdeveloped lore areas. POST preferred (avoids caching). | AllKnower |
 | `POST` | `/api/ai/relationships` | Get AI relationship suggestions for text/note. | AllKnower |
 | `PUT` | `/api/ai/relationships` | Apply suggested relationships (persists as AllCodex relation attributes). | AllKnower |
+| `POST` | `/api/ai/copilot` | Article copilot turn — sends conversation transcript + current note context, returns assistant message + optional proposal. | AllKnower |
+| `POST` | `/api/ai/copilot/apply` | Apply an approved copilot proposal (create/update notes, labels, relations). Returns `{ updatedNoteIds, createdNoteIds, skipped, failed }`. | AllCodex ETAPI |
 
 ### POST `/api/ai/consistency`
 
