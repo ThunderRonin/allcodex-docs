@@ -22,6 +22,7 @@ These files are checked out as a git submodule (`ThunderRonin/allcodex-docs`) in
 | File | Purpose |
 |---|---|
 | [planning/ROADMAP.md](planning/ROADMAP.md) | DM-first feature roadmap — Phases 0–4 ✅, Phase 5 ⚠️ partial |
+| [planning/v1_final_hit_plan.md](planning/v1_final_hit_plan.md) | Final v1 release checklist and verification gates |
 | [planning/implementation_plan_phases_0_3.md](planning/implementation_plan_phases_0_3.md) | Detailed implementation plan for Phases A–G (all complete) |
 | [planning/allcodex_dm_first_scope.md](planning/allcodex_dm_first_scope.md) | Original product scope definition (still valid) |
 | [planning/remaining-features-plan.md](planning/remaining-features-plan.md) | AllKnower remaining-features tracker — all three tracked features shipped |
@@ -48,4 +49,3 @@ These files are checked out as a git submodule (`ThunderRonin/allcodex-docs`) in
 - [allcodex-core/CLAUDE.md](../../allcodex-core/CLAUDE.md) — AllCodex Core deep dive
 - [allknower/docs/ai_architecture_investigation.md](../../allknower/docs/ai_architecture_investigation.md) — RAG/AI improvement research
 - [allcodex-portal/ROADMAP.md](../../allcodex-portal/ROADMAP.md) — portal-specific feature backlog
-
