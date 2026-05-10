@@ -47,5 +47,5 @@ These files are checked out as a git submodule (`ThunderRonin/allcodex-docs`) in
 
 - [AGENTS.md](../../AGENTS.md) — root agent guide (commands, conventions, key files, pitfalls)
 - [allcodex-core/CLAUDE.md](../../allcodex-core/CLAUDE.md) — AllCodex Core deep dive
-- [allknower/docs/ai_architecture_investigation.md](../../allknower/docs/ai_architecture_investigation.md) — RAG/AI improvement research
+- [allknower/docs/ai_architecture_investigation.md](../../allknower/docs/ai_architecture_investigation.md) — RAG/AI improvement research (Refer to AllKnower's `.env.example` for current LLM model preferences)
 - [allcodex-portal/ROADMAP.md](../../allcodex-portal/ROADMAP.md) — portal-specific feature backlog
