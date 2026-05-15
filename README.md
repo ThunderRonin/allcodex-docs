@@ -25,7 +25,7 @@ These files are checked out as a git submodule (`ThunderRonin/allcodex-docs`) in
 | [planning/v1_final_hit_plan.md](planning/v1_final_hit_plan.md) | Final v1 release checklist and verification gates |
 | [planning/implementation_plan_phases_0_3.md](planning/implementation_plan_phases_0_3.md) | Detailed implementation plan for Phases A–G (all complete) |
 | [planning/allcodex_dm_first_scope.md](planning/allcodex_dm_first_scope.md) | Original product scope definition (still valid) |
-| [planning/remaining-features-plan.md](planning/remaining-features-plan.md) | AllKnower remaining-features tracker — all three tracked features shipped |
+| ~~planning/remaining-features-plan.md~~ | Moved to archive (all features shipped) |
 
 ## Analysis — Audits & Trackers
 
@@ -35,11 +35,18 @@ These files are checked out as a git submodule (`ThunderRonin/allcodex-docs`) in
 | [analysis/worldanvil_feature_matrix.md](analysis/worldanvil_feature_matrix.md) | Feature-by-feature audit against World Anvil pages |
 | [analysis/context_compaction_plan.md](analysis/context_compaction_plan.md) | AllKnower AI/RAG improvement backlog (future work) |
 
+## Release History
+
+| File | Purpose |
+|---|---|
+| [v1_release_changelog.md](v1_release_changelog.md) | v1 release summary — architecture boundary, user-scoped credentials, auto-provisioning, code quality |
+
 ## Archive
 
 | File | Purpose |
 |---|---|
 | [archive/allcodex_dm_first_roadmap.md](archive/allcodex_dm_first_roadmap.md) | 📦 Archived — superseded by planning/ROADMAP.md |
+| [archive/remaining-features-plan.md](archive/remaining-features-plan.md) | 📦 Archived — all three tracked features shipped |
 
 ---
 

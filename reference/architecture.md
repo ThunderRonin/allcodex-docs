@@ -20,7 +20,8 @@
 12. [AllCodex Core Customizations](#12-allcodex-core-customizations)
 13. [AllKnower Internals](#13-allknower-internals)
 14. [Portal Internals](#14-portal-internals)
-15. [Mermaid Diagram](#15-mermaid-diagram)
+15. [Testing](#15-testing)
+16. [Mermaid Diagram](#16-mermaid-diagram)
 
 ---
 
@@ -74,6 +75,8 @@ Everything is a **note**. Notes have:
 
 Content (the HTML body) is stored separately in a `blobs` table joined by `blobId`.
 
+**Content sanitization model:** Core sanitizes **titles** at write time (`html_sanitizer.sanitize()` in `notes.ts`) — script tags, RTL override characters, and other XSS vectors are stripped. **Content is stored verbatim** — Core does not sanitize note body HTML. This is by design: Core is a storage layer, and content may contain legitimate embedded HTML. Sanitization of content for browser rendering is the **Portal's responsibility** via `sanitizeLoreHtml()` / `sanitizePlayerView()`.
+
 ### How notes relate to each other
 
 Notes are organized in a **tree** via **branches**. A branch links a parent note to a child note with a position number. A single note can have multiple parents (multi-parent tree, not a strict hierarchy).
@@ -94,17 +97,27 @@ AllCodex Core exposes a REST API under `/etapi/`:
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/create-note` | Create a note and place it in the tree |
-| `GET` | `/notes?search=...` | Full-text and attribute search |
+| `GET` | `/notes?search=...` | Full-text and attribute search (`fastSearch=true` for fuzzy) |
 | `GET` | `/notes/:id` | Get note metadata and attributes |
-| `GET/PUT` | `/notes/:id/content` | Read/write the HTML body |
+| `GET/PUT` | `/notes/:id/content` | Read/write the note body (PUT accepts `text/plain` only — `express.text()` default) |
 | `PATCH` | `/notes/:id` | Update title, type, mime |
 | `DELETE` | `/notes/:id` | Delete a note |
+| `GET` | `/notes/:id/revisions` | List all revisions for a note |
+| `GET` | `/notes/:id/export?format=` | Export note as zip (`html`, `markdown`, or `share`) |
+| `GET` | `/notes/history` | Recent changes across all notes |
 | `POST` | `/attributes` | Create a label or relation |
 | `PATCH/DELETE` | `/attributes/:id` | Update or remove an attribute |
-| `POST` | `/branches` | Create a parent-child link |
+| `POST` | `/branches` | Create a parent-child link (clone note to second parent) |
+| `GET` | `/bookmarks` | List bookmarked notes |
+| `POST` | `/bookmarks/:noteId` | Add a bookmark |
+| `DELETE` | `/bookmarks/:noteId` | Remove a bookmark (idempotent — returns 204 even if absent) |
+| `GET` | `/revisions/:id` | Get revision metadata |
+| `GET` | `/revisions/:id/content` | Get revision content |
 | `GET` | `/app-info` | Server version and status |
 
 Auth: token-based. Create an ETAPI token in AllCodex Options. Pass it in the `Authorization` header on every request.
+
+> **Body parser gotcha:** `PUT /notes/:id/content` requires `Content-Type: text/plain`. Express's `text()` middleware only parses `text/plain` by default — sending `text/html` results in `req.body = null` and a 500 error.
 
 Interactive API docs are served at `/docs` (Scalar UI). The OpenAPI spec is at `/etapi/openapi.json`.
 
@@ -188,9 +201,12 @@ All LLM and embedding calls go through OpenRouter. Each task has a configurable 
 | `POST` | `/import/system-pack` | Import SRD/system JSON packs as statblock notes |
 | `POST` | `/import/azgaar` | Import an Azgaar Fantasy Map Generator export |
 | `POST` | `/import/azgaar/preview` | Preview an Azgaar map export |
+| `POST` | `/copilot/article` | Multi-turn article copilot: AI-assisted editing session for a specific note |
 | `POST` | `/setup/seed-templates` | Create lore templates in AllCodex |
 | `POST` | `/config/allcodex` | Persist AllCodex URL/token in AllKnower app config |
-| `GET` | `/health` | Service health (AllCodex, Postgres, LanceDB) |
+| `GET/POST/DELETE` | `/integrations/allcodex` | Manage per-user encrypted AllCodex ETAPI credentials |
+| `POST` | `/internal/auto-provision` | Create session for first user (Portal middleware only, requires `X-Portal-Internal-Secret`) |
+| `GET` | `/health` | Service health (AllCodex, Postgres, LanceDB, bootstrap status) |
 | `POST` | `/api/auth/sign-up/email` | Register a new AllKnower account |
 | `POST` | `/api/auth/sign-in/email` | Login and receive a bearer token |
 | `POST` | `/api/auth/sign-out` | Invalidate the current session |
@@ -394,13 +410,16 @@ AllCodex can publish notes as public web pages (no auth required).
 1. A note with `#shareRoot` becomes the root of a public share tree.
 2. Notes under the share root are accessible at `http://localhost:8080/share/<shareId>`.
 3. The content renderer (`content_renderer.ts`) processes each note:
-   - Notes labeled `#gmOnly` are completely hidden (empty content returned).
+   - Notes labeled `#draft` or `#gmOnly` are completely hidden (empty content returned).
+   - Protected notes return a "Protected note cannot be displayed" message.
+   - The share index (`#shareIndex`) filters out `#draft`, `#gmOnly`, and protected child notes from the listing.
    - HTML elements with `class="gm-only"` are stripped from the output.
    - `{{variableName}}` placeholders are expanded using JSON from notes labeled `#worldVariables`.
    - Internal note links are resolved to share URLs.
    - Code blocks get syntax highlighting.
    - Mermaid diagrams are rendered as images.
    - Include notes (`<section class="include-note">`) are expanded inline.
+   - Theme songs (`#themeSongUrl` label) render an embedded Spotify player card above the content.
 4. The result is rendered through an EJS template with navigation, dark/light mode toggle, and customizable CSS/JS.
 
 ---
@@ -464,8 +483,49 @@ Browser  POST /api/brain-dump  { text }
   -> Next.js reads allknower_token cookie via get-creds.ts
   -> POST <allknower_url>/brain-dump  Authorization: Bearer <token>
   <- AllKnower auth-guard validates token with better-auth
+  <- AllKnower resolves per-user AllCodex credentials from user_integrations table
   <- Result returned to browser
 ```
+
+### 10.5 Zero-Login Auto-Provisioning
+
+In development (and single-user deployments), the ecosystem auto-provisions all credentials so the first browser visit works with zero manual setup:
+
+**Stage 1: AllCodex Core password**
+AllCodex Core reads `ALLCODEX_PASSWORD` from env at startup. If set, it becomes the admin password (replaces any existing password on boot).
+
+**Stage 2: AllKnower bootstrap**
+On startup, `runBootstrap()` executes (with retry logic — 6 attempts, 5s delay):
+
+```
+AllKnower startup (src/bootstrap/index.ts)
+  1. ensureDefaultUser()
+     -> prisma.user.findFirst() — adopt existing user OR
+     -> POST <BETTER_AUTH_URL>/api/auth/sign-up/email {email: "default@allcodex.local", password: env.ALLCODEX_PASSWORD}
+     -> Returns { id, email, isNew }
+
+  2. ensureEtapiToken(userId)
+     -> POST <ALLCODEX_URL>/etapi/auth/login {password: env.ALLCODEX_PASSWORD}
+     -> Receives ETAPI authToken
+     -> Stores in AppConfig (legacy compat) AND
+     -> Upserts encrypted UserIntegration for the bootstrap user
+```
+
+**Stage 3: Portal middleware auto-provision**
+
+```
+Browser request → Portal middleware (middleware.ts)
+  -> Check for allknower_token cookie
+  -> If absent: POST <ALLKNOWER_URL>/internal/auto-provision
+     <- AllKnower creates/reuses a session for the first user
+     <- Returns { token, url }
+  -> Sets allknower_token + allknower_url as HTTP-only cookies
+  -> Next request: cookie present → middleware is a no-op
+```
+
+The middleware has a 30s cooldown cookie (`_ak_provision_attempted`) to prevent retry storms if AllKnower is unavailable.
+
+**Important:** The bootstrap creates a `UserIntegration` only for the first (bootstrap) user. Additional users who register via the Portal Settings page must manually connect their AllCodex credentials, or an admin must provision their integration.
 
 ---
 
@@ -584,8 +644,15 @@ src/
   app.ts                Elysia app instance, route registration
   env.ts                Zod-validated environment variables
   auth/index.ts         better-auth setup (email/password, Bearer)
-  db/client.ts          Prisma client with pretty-printed query logging
+  bootstrap/
+    index.ts            Bootstrap orchestrator (ensureDefaultUser → ensureEtapiToken, retry logic)
+    ensure-default-user.ts  Creates/adopts first user via better-auth sign-up
+    ensure-etapi-token.ts   Obtains ETAPI token from Core, stores in UserIntegration
+  db/client.ts          Prisma client with port-fallback connection logic
   etapi/client.ts       AllCodex Core ETAPI wrapper (createNote, tagNote, etc.)
+  integrations/
+    allcodex.ts         Per-user AllCodex credential resolver (resolveAllCodexCredentials, connectAllCodexIntegration)
+    credential-crypto.ts  AES-256-GCM encryption/decryption for stored tokens
   pipeline/
     brain-dump.ts       Main orchestrator (RAG -> LLM -> parse -> ETAPI)
     azgaar.ts           Azgaar Fantasy Map Generator import pipeline (parse JSON, create notes)
@@ -614,10 +681,13 @@ src/
     rag.ts              POST /rag/query, /rag/reindex, GET /rag/status
     consistency.ts      POST /consistency/check
     suggest.ts          POST /suggest/relationships, GET /suggest/gaps, /suggest/autocomplete
-    health.ts           GET /health (deep check: AllCodex Core + Postgres + LanceDB)
+    copilot.ts          POST /copilot/article (multi-turn AI article editing)
+    health.ts           GET /health (deep check: AllCodex Core + Postgres + LanceDB + bootstrap)
     setup.ts            POST /setup/seed-templates
     import.ts           POST /import/system-pack, POST /import/azgaar/preview, POST /import/azgaar, GET /import/azgaar/preview (stub)
     config.ts           POST /config/allcodex
+    integrations.ts     GET/POST/DELETE /integrations/allcodex (per-user credential CRUD)
+    auto-provision.ts   POST /internal/auto-provision (Portal middleware, requires X-Portal-Internal-Secret)
   types/
     lore.ts             Zod schemas (21 entity types, 17 relationship types, brain dump result, etc.)
 ```
@@ -633,7 +703,8 @@ src/
 | `brain_dump_history` | Log of every brain dump (raw text, `rawTextHash` for idempotency dedup, parsed JSON, created/updated note ID arrays, model, token count) |
 | `llm_call_log` | Append-only log of every LLM call (task, model, tokens, latencyMs, requestId) |
 | `rag_index_meta` | Tracks which notes are indexed (noteId, title, chunk count, model, embeddedAt) |
-| `app_config` | Key-value store for AllKnower runtime settings, including AllCodex URL/token |
+| `app_config` | Key-value store for AllKnower runtime settings (legacy — AllCodex URL/token stored here for backward compat; per-user credentials live in `user_integrations`) |
+| `user_integrations` | Per-user encrypted AllCodex ETAPI credentials (userId, provider, encryptedToken, baseUrl). Created by bootstrap for the default user; additional users provision via `/integrations/allcodex` |
 | `relation_history` | Log of applied relation suggestions (sourceNoteId, targetNoteId, type, description) |
 | `lore_session` | Session compaction (Tier 3) — conversation session metadata (userId, title, createdAt, compactedAt) |
 | `lore_session_message` | Individual messages within a lore session (role, content, tokenCount, sessionId FK) |
@@ -706,11 +777,15 @@ app/
     timeline/route.ts         Timeline event query proxy
     share/route.ts            Share settings CRUD (toggle, password, visibility)
     share/tree/route.ts       Share tree listing
-    auth/sync/route.ts        Token cookie sync after AllKnower login
+    auth/_shared.ts           Shared auth helpers (resolveAllKnowerUrl, setAllKnowerSessionCookies)
     ai/*/route.ts             Proxy to AllKnower AI endpoints (POST suggest, PUT apply)
     search/route.ts           Dual-mode search proxy
     rag/route.ts              Proxy to AllKnower RAG query
     config/                   Credential storage/retrieval (cookies), portal settings
+    config/portal/            Portal-specific UI settings (lore root note ID)
+
+middleware.ts               Auto-provision middleware: on first visit, calls AllKnower /internal/auto-provision
+                             to obtain session token, sets allknower_token + allknower_url cookies
 
 lib/
   etapi-server.ts         Server-side AllCodex ETAPI client (notes, attributes, branches, search — 16 functions)
@@ -780,6 +855,17 @@ BlockNote (LoreEditor.tsx)
 
 ### Credential flow
 
+**Auto-provisioning (default for first visit):**
+```
+First browser request -> Portal middleware (middleware.ts)
+  -> No allknower_token cookie found
+  -> POST <ALLKNOWER_URL>/internal/auto-provision (X-Portal-Internal-Secret header)
+  <- { token, url }
+  -> Sets HTTP-only cookies: allknower_token, allknower_url
+  -> All subsequent requests: cookie present, middleware is no-op
+```
+
+**Manual configuration (Settings page):**
 ```
 Settings page -> POST /api/config/connect
   -> Sets HTTP-only cookies: allcodex_url, allcodex_token
@@ -813,7 +899,44 @@ The Portal shows contextual banners when services are misconfigured or unreachab
 
 ---
 
-## 15. Mermaid Diagram
+## 15. Testing
+
+### AllCodex Core
+
+**Unit tests (vitest):** 87 test files, 1028 tests. Coverage: ~45% statements, ~40% branches, ~50% functions. Run via `pnpm server:coverage`.
+
+- Test helpers: `becca_mocking.ts` (backend cache), `shaca_mocking.ts` (share cache) — build in-memory entity graphs for isolated tests.
+- `content_renderer.spec.ts` covers share rendering: draft suppression, gmOnly hiding, theme songs, world variables, reference links, PDF rendering, include notes.
+
+**E2E tests (Playwright):** 11 ETAPI-based tests in `lore_workflows.spec.ts`. No browser UI tests — the Trilium client was removed.
+
+| Test | What it covers |
+|---|---|
+| Lore CRUD + canonical attributes | Create character/location, verify `#lore`, `#loreType`, `~template` |
+| Relationship storage | Create relation attribute, verify via GET |
+| Content types | Code, mermaid, rich text (including gm-only sections) |
+| XSS sanitization | Title stripped of scripts; content stored verbatim (by design) |
+| Bookmark CRUD | Add, list, delete, idempotent delete |
+| Search | Title substring, label query, `fastSearch=true` param |
+| Content update + revisions | PUT content, verify update, revision list endpoint |
+| PATCH | Partial note update (title only) |
+| Branch cloning | Multi-parent DAG (clone to second parent) |
+| Export | HTML format zip archive (magic bytes check) |
+| Recent changes | `/notes/history` returns newly created notes |
+
+E2e infra: Pre-start server on port 8082 with `TRILIUM_INTEGRATION_TEST=memory`, run Playwright with `TRILIUM_DOCKER=1` to skip the slow `pnpm build` auto-start.
+
+### AllKnower
+
+`bun run check` — runs `tsc --noEmit && bun test`. Must run `bun test` per-directory to avoid mock registry contamination: `test/`, `src/etapi/`, `src/pipeline/`, `src/routes/`, `src/rag/` separately.
+
+### Portal
+
+`bun run check` — runs `tsc --noEmit && vitest run`. No Playwright browser tests in CI (separate workflow).
+
+---
+
+## 16. Mermaid Diagram
 
 ```mermaid
 graph TB
@@ -828,7 +951,7 @@ graph TB
         EtapiClient["lib/etapi-server.ts"]
         AkClient["lib/allknower-server.ts"]
         CredStore["lib/get-creds.ts<br/>(HTTP-only cookies + env fallback)"]
-        Stores["Zustand Stores<br/>useAIToolsStore | useBrainDumpStore"]
+        Stores["Zustand Stores<br/>useAIToolsStore | useBrainDumpStore | useCopilotStore"]
 
         Pages --> Stores
         Pages --> APIRoutes

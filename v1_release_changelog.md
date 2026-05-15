@@ -24,7 +24,16 @@ This document outlines the major architectural and functional changes accomplish
 **Previous State:** The database wipe functionality was incomplete. Dropping the LanceDB vector table left orphaned metadata in Prisma, causing the dashboard to report phantom "Indexed RAG entities."
 **v1 State:** Integrated a dangerous-ops "Wipe DB Lore & RAG" card into the Portal Settings UI. The `/config/wipe` route now comprehensively drops the LanceDB table AND clears all associated tracking state from Prisma, including `LoreSession`, `LlmCallLog`, `RagIndexMeta`, `BrainDumpHistory`, and `RelationHistory`.
 
-## 5. Code Quality & Release Gates
+## 5. Zero-Login Auto-Provisioning
+**Previous State:** First-time users had to manually register an AllKnower account, log in, then separately connect AllCodex Core credentials in Settings before any AI features would work.
+**v1 State:** A three-stage bootstrap chain eliminates all manual setup:
+1. **AllCodex Core** auto-sets its password from the `ALLCODEX_PASSWORD` env var at startup.
+2. **AllKnower** runs a bootstrap sequence on startup: creates a default user via `better-auth` sign-up, obtains an ETAPI token from Core via password auth, and stores it as an encrypted `UserIntegration` for that user.
+3. **Portal middleware** detects the absence of an `allknower_token` cookie on each request and calls `POST /internal/auto-provision` on AllKnower to obtain a session for the first user, setting it as an HTTP-only cookie.
+
+The result is zero-click operation: the first browser visit auto-provisions all credentials. Manual login/register flows remain available for multi-user scenarios.
+
+## 6. Code Quality & Release Gates
 **Previous State:** The repository had several failing typechecks in `allcodex-portal` and `allcodex-core`, alongside broken test mocks in `allknower` due to evolving API signatures.
 **v1 State:** 
 - Successfully threaded the new `credentials?: EtapiCredentials` parameter through all necessary functions and test mocks.

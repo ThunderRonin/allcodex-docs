@@ -187,8 +187,8 @@ Returns:
 | `GET\|POST` | `/api/ai/gaps` | Detect underdeveloped lore areas. POST preferred (avoids caching). | AllKnower |
 | `POST` | `/api/ai/relationships` | Get AI relationship suggestions for text/note. | AllKnower |
 | `PUT` | `/api/ai/relationships` | Apply suggested relationships (persists as AllCodex relation attributes). | AllKnower |
-| `POST` | `/api/ai/copilot` | Article copilot turn — sends conversation transcript + current note context, returns assistant message + optional proposal. | AllKnower |
-| `POST` | `/api/ai/copilot/apply` | Apply an approved copilot proposal (create/update notes, labels, relations). Returns `{ updatedNoteIds, createdNoteIds, skipped, failed }`. | AllCodex ETAPI |
+| `POST` | `/api/lore/[id]/copilot/chat` | Article copilot turn — sends conversation transcript + current note context, returns assistant message + optional proposal. | AllKnower |
+| `POST` | `/api/lore/[id]/copilot/apply` | Apply an approved copilot proposal (create/update notes, labels, relations). Returns `{ updatedNoteIds, createdNoteIds, skipped, failed }`. | AllCodex ETAPI |
 
 ### POST `/api/ai/consistency`
 
@@ -259,7 +259,7 @@ Each note includes: `noteId`, `title`, `isDraft`, `isGmOnly`, `shareAlias`, `isP
 | `GET` | `/api/config/portal` | Get portal config (lore root note ID). | None (local) |
 | `PUT` | `/api/config/portal` | Set portal config. | None (local) |
 | `GET` | `/api/config/status` | Check connectivity to AllCodex and AllKnower. | Both |
-| `POST` | `/api/auth/sync` | Sync an AllKnower token to cookies (post-login). | None (local) |
+| ~~`POST`~~ | ~~`/api/auth/sync`~~ | **DEPRECATED — dead code, scheduled for removal.** Was: sync an AllKnower token to cookies. Auto-provisioning middleware now handles this. | None (local) |
 
 ### POST `/api/config/allcodex-login`
 
