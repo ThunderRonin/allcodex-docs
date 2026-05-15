@@ -38,5 +38,19 @@ The result is zero-click operation: the first browser visit auto-provisions all 
 **v1 State:** 
 - Successfully threaded the new `credentials?: EtapiCredentials` parameter through all necessary functions and test mocks.
 - `bun run check` (TypeScript + 121 tests) passes flawlessly in `allknower`.
-- `bun run check` (TypeScript + 140 tests) and `bun run build` pass in `allcodex-portal`.
-- `pnpm typecheck` passes cleanly in `allcodex-core`.
+- `bun run check` (TypeScript + 258 tests) and `bun run build` pass in `allcodex-portal`.
+- `pnpm typecheck` and `pnpm test:all` (1028 tests) pass in `allcodex-core`.
+
+## 7. V1 Code Review Remediation
+**35 findings** from a full-stack code review were audited and resolved across all three services. 32 were already fixed during v1 development; 3 required new commits:
+
+- **AllKnower:** Deleted dead credential modules (`core.ts`, `crypto.ts`, migration script — 187 lines removed). Scoped `/config/wipe` deleteMany calls by `session.user.id` instead of wiping all users' data. Threaded per-user credentials through the setup/seed-templates route.
+- **Portal:** Fixed `putNoteContent` Content-Type from `text/html` to `text/plain` — Core's `express.text()` only parses `text/plain`; the wrong header caused `req.body = null` and 500 errors on note saves.
+- **Core:** E2E test suite overhauled — 18 stale Trilium client UI specs deleted, 7 new ETAPI tests added (11 total, all passing). Share index now filters `#draft`/`#gmOnly`/protected notes. `shaca_mocking.ts` wires SBranch for parent-child test assertions.
+
+## 8. Testing Infrastructure
+**Previous State:** Core had 59 e2e specs, 56 of which were stale Trilium client UI tests that failed on every run. Unit test coverage was not tracked. Portal had ~140 unit tests.
+**v1 State:**
+- **Core:** 11 e2e tests (all ETAPI-based, no browser UI), 1028 unit tests across 87 files. Coverage baseline: 45.43% statements, 39.84% branches, 50.24% functions.
+- **AllKnower:** 121+ tests across 5 test groups (run per-directory to avoid mock contamination).
+- **Portal:** 258 unit tests across 45 files, plus ~150 Playwright e2e tests across 28 specs.
