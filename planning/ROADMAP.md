@@ -788,7 +788,7 @@ Infrastructure to keep RAG and LLM context usage efficient as lore databases gro
 | Tier 0 | Baseline RAG budget enforcement | ✅ Shipped |
 | Tier 1 | Chunk deduplication (0.85 cosine threshold) — `rag/chunk-dedup.ts` | ✅ Shipped |
 | Tier 2 | Chunk summarization — `rag/chunk-compactor.ts` | ✅ Shipped |
-| Tier 3 | Session compaction — `pipeline/session-compactor.ts`, `lore_session` + `lore_session_message` Prisma tables | 🔧 Prepared (DB tables + compactor code exist, not wired to routes) |
+| Tier 3 | Session compaction — `pipeline/session-compactor.ts`, `lore_session` + `lore_session_message` Prisma tables | ✅ Shipped (wired to copilot route, auto-triggers via `shouldCompact()`) |
 
 See [analysis/context_compaction_plan.md](../analysis/context_compaction_plan.md) for the full design.
 
@@ -878,13 +878,30 @@ Original build sequence completed:
 5. ~~Brain Dump review-first workflow with contradiction and duplicate warnings~~ ✅
 6. ~~live session workspace with quick capture, recap, and quest tracking~~ ✅
 
+## What Was Built (v1 Remediation) ✅
+
+35 findings from the v1 code review fixed across all 3 services:
+
+- AllKnower: userId scoping, credential consolidation, auth guards, ETAPI timeout, Prisma crash-on-fail
+- Portal: SSRF protection, dead endpoint removal, Mermaid hardening, LLM proxy timeouts, Zod validation
+- Core: share index draft filtering, XSS test assertions, import extension fix
+
+## What Was Built (Streaming + Schema Fixes) ✅
+
+- `callModelStream` rewritten from broken Responses API to SDK `chat.send({ stream: true })`
+- Zod `optStr` helper: accepts `null` from LLMs, outputs `string | undefined` (106 fields across 21 entity types)
+- `requireParameters` removed from model-router (incompatible with free-tier routing)
+- Relationship graph Phase 5: multi-hop BFS, type/confidence filters, batch apply, metrics, timeline
+
 ## What To Build Next
 
 Highest-value sequence for remaining and new work:
 
 1. Phase 5 completion: homebrew statblock editing, rules-aware RAG retrieval
-2. Session compaction (Tier 3): wire existing compactor to routes for long-running lore sessions
-3. Phase 6: 5etools import pipeline (extend system-pack importer)
-4. Phase 6: 5etools homebrew export (AllCodex → 5etools JSON)
-5. Phase 6: brain dump enrichment with imported rules content
-6. Map embeds and clickable pins (deferred from Phase 4)
+2. Phase 6: 5etools import pipeline (extend system-pack importer)
+3. Phase 6: 5etools homebrew export (AllCodex → 5etools JSON)
+4. Phase 6: brain dump enrichment with imported rules content
+5. Token usage dashboard (LLMCallLog data exists, no visibility)
+6. Streaming entity rendering (progressive brain dump card display)
+7. Hybrid search — keyword + vector with Cohere rerank
+8. Map embeds and clickable pins (deferred from Phase 4)
