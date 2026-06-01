@@ -139,17 +139,29 @@ All lore types are expressed via the `#loreType` label on a note.
 
 ## Relation Types
 
-These are AllCodex relation (`~`) attributes used by AllKnower's auto-relate pipeline.
+AllKnower's auto-relate / apply pipeline emits a fixed set of 17 canonical relationship types (`RelationshipTypeSchema` in `allknower/src/types/lore.ts`). Each is mapped to a Core relation (`~`) attribute name via `RELATIONSHIP_TYPE_TO_CORE_NAME` in `allknower/src/relationships/mapping.ts` — the canonical token is capitalized and prefixed with `rel` (e.g. `member_of` → `~relMemberOf`). Unknown types are **rejected** (no generic `relOther` fallback). Relations are written bidirectionally by default, with the human-readable description stored as a `#relationNote` label on each side.
 
-| Relation | From → To | Description |
-|---|---|---|
-| `~template` | note → template | Links a note to its template |
-| `~character` | note → character | References a character |
-| `~location` | note → location | References a location |
-| `~faction` | note → faction | References a faction |
-| `~session` | scene/quest → session | Links scene or quest to its session |
-| `~questSource` | quest → character/faction | Quest giver relation |
-| `~relatedNote` | any → any | Generic cross-reference |
+| Canonical type | Core relation name |
+|---|---|
+| `ally` | `~relAlly` |
+| `enemy` | `~relEnemy` |
+| `rival` | `~relRival` |
+| `family` | `~relFamily` |
+| `member_of` | `~relMemberOf` |
+| `leader_of` | `~relLeaderOf` |
+| `serves` | `~relServes` |
+| `located_in` | `~relLocatedIn` |
+| `originates_from` | `~relOriginatesFrom` |
+| `participated_in` | `~relParticipatedIn` |
+| `caused` | `~relCaused` |
+| `created` | `~relCreated` |
+| `owns` | `~relOwns` |
+| `wields` | `~relWields` |
+| `worships` | `~relWorships` |
+| `inhabits` | `~relInhabits` |
+| `related_to` | `~relRelatedTo` |
+
+`~template` (note → its lore template) is a separate structural relation, set at note creation and not produced by the auto-relate pipeline.
 
 ---
 

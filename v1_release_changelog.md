@@ -54,3 +54,14 @@ The result is zero-click operation: the first browser visit auto-provisions all 
 - **Core:** 11 e2e tests (all ETAPI-based, no browser UI), 1028 unit tests across 87 files. Coverage baseline: 45.43% statements, 39.84% branches, 50.24% functions.
 - **AllKnower:** 121+ tests across 5 test groups (run per-directory to avoid mock contamination).
 - **Portal:** 258 unit tests across 45 files, plus ~150 Playwright e2e tests across 28 specs.
+
+## 9. v1 Feature Highlights
+Beyond the architecture and quality work above, v1 ships these user-facing features:
+
+- **Streaming entity rendering:** brain dump auto-mode streams over SSE (`/brain-dump/stream`), rendering progressive entity cards, live token count, and an elapsed timer instead of a single blocking call.
+- **Bulk brain dump:** batch submission (`/brain-dump/batch`) queues multiple dumps for background processing, with status polling and cancellation; backed by the `brain_dump_jobs` table.
+- **Lore revision / diff history:** content writes thread an `X-Revision-Source` ETAPI header so Core saves a revision tagged by source; brain dumps link the revisions they produced (`brain_dump_revision_links`), and the Portal exposes per-note revisions and per-dump diffs (`/api/lore/[id]/revisions`, `/api/brain-dump/[id]/diffs`).
+- **Relationship graph (React Flow):** the on-demand relationship graph migrated from a static Mermaid render to an interactive React Flow canvas (`@xyflow/react`) with a filter bar, graph metrics, multi-hop traversal (`/suggest/graph/:noteId`), a suggestion cache, and apply history.
+- **Hybrid search:** RAG retrieval fuses vector + native BM25 (FTS) candidates via Reciprocal Rank Fusion, with optional OpenRouter rerank; FTS health is surfaced in `/health`.
+- **Usage & token-budget dashboard:** per-user token/cost usage summaries, per-task/model breakdowns, configurable budgets, and over-budget alert status (`/usage/*`, `/metrics/llm`); backed by `llm_call_log`, `model_pricing`, and `user_budgets`.
+- **Push notifications:** web-push subscriptions (`/notifications/*`, `push_subscriptions`) notify the browser on long-running events such as brain dump completion.
