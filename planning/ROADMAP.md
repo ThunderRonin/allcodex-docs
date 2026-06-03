@@ -1,6 +1,6 @@
 # AllCodex Roadmap
 
-Date: March 31, 2026 · Updated: April 27, 2026
+Date: March 31, 2026 · Updated: May 16, 2026
 
 > **Single source of truth** for all AllCodex roadmap work across AllCodex Core, AllKnower, and AllCodex Portal.
 > When roadmap priorities conflict with component-level backlogs, this document wins.
@@ -69,6 +69,7 @@ Lightweight map embeds and pins are in scope. A full map editor is not.
 | Phase 3 | Session runtime and continuity guardrails | `P1→P2` | ✅ Complete |
 | Phase 4 | Player-safe sharing, maps, and import | `P2` | ✅ Complete |
 | Phase 5 | Rules reference and system-content expansion | `P3` | ⚠️ Partial (statblocks shipped, rules ref TBD) |
+| Phase 6 | 5etools bidirectional homebrew integration | `P3` | 🔜 Planned |
 
 ---
 
@@ -787,7 +788,7 @@ Infrastructure to keep RAG and LLM context usage efficient as lore databases gro
 | Tier 0 | Baseline RAG budget enforcement | ✅ Shipped |
 | Tier 1 | Chunk deduplication (0.85 cosine threshold) — `rag/chunk-dedup.ts` | ✅ Shipped |
 | Tier 2 | Chunk summarization — `rag/chunk-compactor.ts` | ✅ Shipped |
-| Tier 3 | Session compaction — `pipeline/session-compactor.ts`, `lore_session` + `lore_session_message` Prisma tables | 🔧 Prepared (DB tables + compactor code exist, not wired to routes) |
+| Tier 3 | Session compaction — `pipeline/session-compactor.ts`, `lore_session` + `lore_session_message` Prisma tables | ✅ Shipped (wired to copilot route, auto-triggers via `shouldCompact()`) |
 
 See [analysis/context_compaction_plan.md](../analysis/context_compaction_plan.md) for the full design.
 
@@ -822,13 +823,85 @@ Full implementation with real AI endpoints and session runtime: ~10–12 weeks s
 
 ---
 
-## What To Build First
+## Phase 6: 5etools Bidirectional Homebrew Integration 🔜
 
-Highest-value sequence if only a few slices can run:
+> **Planned.** Depends on Phase 5 statblock/rules foundation.
 
-1. contract and schema stabilization
-2. lore root config and promoted attribute parity
-3. Brain Dump history detail and trusted Brain Dump outputs
-4. article view redesign with hierarchy and infoboxes
-5. Brain Dump review-first workflow with contradiction and duplicate warnings
-6. live session workspace with quick capture, recap, and quest tracking
+**Outcome:** AllCodex becomes a homebrew workshop — DMs import official 5e content as lore context, create custom creatures/items/spells in AllCodex, and export them as 5etools-compatible homebrew JSON for players.
+
+### Import: 5etools → AllCodex
+
+- Parse 5etools structured JSON (monsters, spells, items, classes, races) into AllCodex notes using existing templates (Statblock, Spell/Magic, Item/Artifact, Creature, Race)
+- Extend the existing system-pack import pipeline (`/import/system-pack`) to accept 5etools JSON format
+- Map 5etools fields to AllCodex promoted attributes (CR, AC, HP, spell level, rarity, etc.)
+- Import as reference lore with `#importSource=5etools` and `#systemContent` labels
+- Support selective import (pick which monsters/spells to bring in)
+
+### Export: AllCodex → 5etools Homebrew
+
+- Export custom creatures, items, spells, and races as 5etools-compatible homebrew JSON
+- Map AllCodex promoted attributes back to 5etools schema fields
+- Generate valid homebrew files that load directly in 5etools
+- Batch export per world or per lore type
+- Portal UI: "Export as 5etools Homebrew" action on statblock/creature/item notes
+
+### Brain Dump Enrichment
+
+- When AllKnower processes a brain dump mentioning D&D entities (creatures, spells, items), cross-reference imported 5etools data to suggest appropriate stat blocks, spell lists, or item templates
+- RAG context includes 5etools reference data for richer entity generation
+- Auto-link to existing 5etools-imported notes when relevant
+
+### Inline References
+
+- World variable syntax or link format (e.g. `{{5e:fireball}}`) that resolves to 5etools-imported notes
+- Share pages render clickable spell/item/monster references for players
+
+### Exit criteria
+
+- DMs can import official SRD/5etools content as searchable lore context
+- Homebrew created in AllCodex exports cleanly to 5etools JSON format
+- Brain dump and article copilot leverage imported rules content for better suggestions
+
+**Estimated effort:** ~12–20h
+
+---
+
+## What Was Built (Phases 0–4) ✅
+
+All foundational phases shipped. See phase sections above for details.
+
+Original build sequence completed:
+1. ~~contract and schema stabilization~~ ✅
+2. ~~lore root config and promoted attribute parity~~ ✅
+3. ~~Brain Dump history detail and trusted Brain Dump outputs~~ ✅
+4. ~~article view redesign with hierarchy and infoboxes~~ ✅
+5. ~~Brain Dump review-first workflow with contradiction and duplicate warnings~~ ✅
+6. ~~live session workspace with quick capture, recap, and quest tracking~~ ✅
+
+## What Was Built (v1 Remediation) ✅
+
+35 findings from the v1 code review fixed across all 3 services:
+
+- AllKnower: userId scoping, credential consolidation, auth guards, ETAPI timeout, Prisma crash-on-fail
+- Portal: SSRF protection, dead endpoint removal, Mermaid hardening, LLM proxy timeouts, Zod validation
+- Core: share index draft filtering, XSS test assertions, import extension fix
+
+## What Was Built (Streaming + Schema Fixes) ✅
+
+- `callModelStream` rewritten from broken Responses API to SDK `chat.send({ stream: true })`
+- Zod `optStr` helper: accepts `null` from LLMs, outputs `string | undefined` (106 fields across 21 entity types)
+- `requireParameters` removed from model-router (incompatible with free-tier routing)
+- Relationship graph Phase 5: multi-hop BFS, type/confidence filters, batch apply, metrics, timeline
+
+## What To Build Next
+
+Highest-value sequence for remaining and new work:
+
+1. Phase 5 completion: homebrew statblock editing, rules-aware RAG retrieval
+2. Phase 6: 5etools import pipeline (extend system-pack importer)
+3. Phase 6: 5etools homebrew export (AllCodex → 5etools JSON)
+4. Phase 6: brain dump enrichment with imported rules content
+5. Token usage dashboard (LLMCallLog data exists, no visibility)
+6. Streaming entity rendering (progressive brain dump card display)
+7. Hybrid search — keyword + vector with Cohere rerank
+8. Map embeds and clickable pins (deferred from Phase 4)

@@ -23,6 +23,8 @@ Date: April 27, 2026
 - [Share Settings](#share-settings)
 - [Configuration & Auth](#configuration--auth)
 - [Import](#import)
+- [Notifications](#notifications)
+- [Usage & Budgets](#usage--budgets)
 - [Key Patterns](#key-patterns)
 
 ---
@@ -32,10 +34,15 @@ Date: April 27, 2026
 All backend calls resolve credentials from HTTP-only cookies via `getEtapiCreds()` and `getAkCreds()` (defined in `lib/get-creds.ts`). If cookies are not set, the route falls back to environment variables in `.env.local`. The browser never sees tokens.
 
 ```
-Browser  →  POST /api/config/connect (or /allcodex-login, /allknower-login)
-         →  HTTP-only cookies set (allcodex_url, allcodex_token, allknower_url, allknower_token)
-         →  All subsequent /api/* calls read creds from cookies
+Browser  →  POST /api/auth/login or /api/config/allknower-login  (AllKnower: email/password → Bearer token)
+         →  HTTP-only cookies set (allknower_url, allknower_token)
+         →  POST /api/integrations/allcodex/connect  (Core: password → ETAPI token,
+              stored as the user's encrypted UserIntegration inside AllKnower)
+         →  All subsequent /api/* calls read the AllKnower token from cookies; Core creds
+              are resolved server-side per-user by AllKnower
 ```
+
+> **Note:** In zero-login/dev deployments the AllKnower token cookie is set automatically by the auto-provisioning middleware, and Core credentials are bootstrapped into the default user's `UserIntegration` — so neither step above is required for the first user. `getEtapiCreds()` resolves Core credentials per-user via AllKnower (`resolveAllCodexCredentials`, using the AllKnower token + `PORTAL_INTERNAL_SECRET`); in non-production it falls back to the `ALLCODEX_URL` / `ALLCODEX_ETAPI_TOKEN` env vars. There is no `allcodex_token` browser cookie in the v1 flow.
 
 ---
 
@@ -96,6 +103,12 @@ Browser  →  POST /api/config/connect (or /allcodex-login, /allknower-login)
 | `GET` | `/api/images/[id]/[filename]` | Redirect compatibility route for editor image URLs. Forwards to `/api/lore/[id]/image`. | None (local redirect) |
 | `GET` | `/api/lore/[id]/backlinks` | Get notes that link to this note (inbound relations + content links). | AllCodex ETAPI |
 | `GET` | `/api/lore/[id]/breadcrumbs` | Get the ancestor branch path for breadcrumb navigation. | AllCodex ETAPI |
+| `GET` | `/api/lore/[id]/revisions` | List a note's revision history. | AllCodex ETAPI |
+| `GET` | `/api/lore/[id]/revisions/[revId]/content` | Get the content of a specific revision. | AllCodex ETAPI |
+| `GET` | `/api/lore/[id]/graph` | Get the relationship graph (existing relations + traversal) for a note. | AllKnower |
+| `GET` | `/api/lore/[id]/relationship-history` | Get the applied-relationship history for a note. | AllKnower |
+| `GET` | `/api/lore/[id]/map` | Build map data for a note: map image URL, dimensions, and geolocation pins derived from child notes. | AllCodex ETAPI |
+| `POST` | `/api/lore/[id]/map/upload` | Upload a map image for a note. | AllCodex ETAPI |
 
 ---
 
@@ -148,9 +161,14 @@ Returns:
 | Method | Path | Description | Backend |
 |--------|------|-------------|---------|
 | `POST` | `/api/brain-dump` | Process raw text through the AI extraction pipeline. | AllKnower |
+| `POST` | `/api/brain-dump/stream` | SSE-streamed auto brain dump (progressive entity cards, tokens, done). | AllKnower |
 | `POST` | `/api/brain-dump/commit` | Commit reviewed entities from review mode. | AllKnower |
 | `GET` | `/api/brain-dump/history` | List the 20 most recent brain dumps. | AllKnower |
 | `GET` | `/api/brain-dump/history/[id]` | Get full detail for a single brain dump entry. | AllKnower |
+| `GET` | `/api/brain-dump/[id]/diffs` | Per-note content diffs (revision history) produced by a brain dump. | AllKnower |
+| `POST` | `/api/brain-dump/batch` | Submit a batch (bulk) of brain dumps for background processing. | AllKnower |
+| `GET` | `/api/brain-dump/batch/[batchId]` | Batch processing status. | AllKnower |
+| `DELETE` | `/api/brain-dump/batch/[batchId]` | Cancel queued jobs in a batch. | AllKnower |
 
 ### POST `/api/brain-dump`
 
@@ -184,9 +202,12 @@ Returns:
 | Method | Path | Description | Backend |
 |--------|------|-------------|---------|
 | `POST` | `/api/ai/consistency` | Run a RAG-augmented consistency scan. | AllKnower |
-| `GET` | `/api/ai/gaps` | Detect underdeveloped lore areas. | AllKnower |
+| `GET\|POST` | `/api/ai/gaps` | Detect underdeveloped lore areas. POST preferred (avoids caching). | AllKnower |
 | `POST` | `/api/ai/relationships` | Get AI relationship suggestions for text/note. | AllKnower |
 | `PUT` | `/api/ai/relationships` | Apply suggested relationships (persists as AllCodex relation attributes). | AllKnower |
+| `POST` | `/api/lore/[id]/copilot/chat` | Article copilot turn — sends conversation transcript + current note context, returns assistant message + optional proposal. | AllKnower |
+| `POST` | `/api/lore/[id]/copilot/stream` | SSE-streamed article copilot turn (status, token, reasoning, result, done). | AllKnower |
+| `POST` | `/api/lore/[id]/copilot/apply` | Apply an approved copilot proposal (create/update notes, labels, relations). Returns `{ updatedNoteIds, createdNoteIds, skipped, failed }`. | AllCodex ETAPI |
 
 ### POST `/api/ai/consistency`
 
@@ -249,23 +270,29 @@ Each note includes: `noteId`, `title`, `isDraft`, `isGmOnly`, `shareAlias`, `isP
 
 | Method | Path | Description | Backend |
 |--------|------|-------------|---------|
-| `POST` | `/api/config/allcodex-login` | Password auth → auto-obtains ETAPI token → sets cookies. | AllCodex ETAPI |
-| `POST` | `/api/config/allknower-login` | Email/password login → sets AllKnower Bearer token cookie. | AllKnower (better-auth) |
+| `POST` | `/api/auth/login` | AllKnower email/password login → sets Bearer token cookie. | AllKnower (better-auth) |
+| `POST` | `/api/auth/register` | Register AllKnower account → sets token cookie. | AllKnower (better-auth) |
+| `POST` | `/api/auth/logout` | Sign out, clear AllKnower session cookie. | AllKnower (better-auth) |
+| `GET` | `/api/auth/session` | Verify AllKnower session, return user. | AllKnower (better-auth) |
+| `POST` | `/api/config/allknower-login` | AllKnower email/password login → sets Bearer token cookie. | AllKnower (better-auth) |
 | `POST` | `/api/config/allknower-register` | Register AllKnower account → sets token cookie. | AllKnower (better-auth) |
-| `POST` | `/api/config/connect` | Store pre-acquired tokens as HTTP-only cookies. | None (local) |
+| `POST` | `/api/integrations/allcodex/connect` | Core password (or pre-acquired token) → obtains ETAPI token → stores it as the user's encrypted `UserIntegration` in AllKnower (no `allcodex_token` browser cookie). | AllCodex ETAPI + AllKnower |
+| `GET` | `/api/integrations/allcodex/status` | Whether a Core integration is connected for the user. | AllKnower |
+| `DELETE` | `/api/integrations/allcodex` | Remove the user's stored Core integration. | AllKnower |
 | `DELETE` | `/api/config/disconnect?service=allcodex\|allknower\|all` | Clear stored credentials. | None (local) |
+| `GET` | `/api/config/models` | List configured/available LLM models per task. | AllKnower |
+| `POST` | `/api/config/wipe` | Dangerous: wipe the user's lore + RAG state (LanceDB table + Prisma tracking). | AllKnower |
 | `GET` | `/api/config/portal` | Get portal config (lore root note ID). | None (local) |
 | `PUT` | `/api/config/portal` | Set portal config. | None (local) |
 | `GET` | `/api/config/status` | Check connectivity to AllCodex and AllKnower. | Both |
-| `POST` | `/api/auth/sync` | Sync an AllKnower token to cookies (post-login). | None (local) |
 
-### POST `/api/config/allcodex-login`
+### POST `/api/integrations/allcodex/connect`
 
 ```json
-{ "url": "http://localhost:8080", "password": "your-password" }
+{ "baseUrl": "http://localhost:8080", "password": "your-password" }
 ```
 
-### POST `/api/config/allknower-login`
+### POST `/api/auth/login`
 
 ```json
 { "url": "http://localhost:3001", "email": "gm@example.com", "password": "secret" }
@@ -283,6 +310,31 @@ Each note includes: `noteId`, `title`, `isDraft`, `isGmOnly`, `shareAlias`, `isP
 The system pack request body is the full system pack JSON. AllKnower creates statblock notes with `#statblock` labels, skips duplicates by title, and returns created/skipped counts.
 
 The Azgaar import page accepts `.map`/JSON files in the browser, parses them client-side, and sends the parsed JSON to this route. Preview mode returns a summary of entities that would be created without writing anything. Full import creates location, faction, religion, race, and map-note entries, skips duplicates by title when enabled, and returns per-entity created/skipped/error buckets.
+
+---
+
+## Notifications
+
+Web-push notifications (e.g. brain dump completion).
+
+| Method | Path | Description | Backend |
+|--------|------|-------------|---------|
+| `GET` | `/api/notifications/vapid-public-key` | Get the VAPID public key for push subscription. | AllKnower |
+| `POST` | `/api/notifications/subscribe` | Register a browser push subscription. | AllKnower |
+| `DELETE` | `/api/notifications/unsubscribe` | Remove a push subscription. | AllKnower |
+
+---
+
+## Usage & Budgets
+
+Token/cost usage dashboard and per-user token budgets.
+
+| Method | Path | Description | Backend |
+|--------|------|-------------|---------|
+| `GET` | `/api/usage/summary` | Token/cost usage summary (per day, task, model). | AllKnower |
+| `GET` | `/api/usage/budgets` | Get the user's token-budget thresholds. | AllKnower |
+| `PUT` | `/api/usage/budgets` | Set the user's token-budget thresholds. | AllKnower |
+| `GET` | `/api/usage/alert-status` | Whether the user is over budget / nearing the alert threshold. | AllKnower |
 
 ---
 
