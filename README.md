@@ -34,6 +34,9 @@ These files are checked out as a git submodule (`ThunderRonin/allcodex-docs`) in
 | [analysis/gap_analysis_vs_worldanvil.md](analysis/gap_analysis_vs_worldanvil.md) | World Anvil parity: P0–P8 shipped, visual maps/per-user ACL/embedded graphs/onboarding remaining |
 | [analysis/worldanvil_feature_matrix.md](analysis/worldanvil_feature_matrix.md) | Feature-by-feature audit against World Anvil pages |
 | [analysis/context_compaction_plan.md](analysis/context_compaction_plan.md) | AllKnower AI/RAG improvement backlog (future work) |
+| [analysis/hybrid-search-hardening.md](analysis/hybrid-search-hardening.md) | Shipped hybrid RAG tuning knobs, FTS health tracking, and verification notes |
+| [analysis/progressive-brain-dump-streaming.md](analysis/progressive-brain-dump-streaming.md) | Shipped progressive brain-dump entity rendering and SSE keepalive behavior |
+| [analysis/qa-report-2026-05-25.md](analysis/qa-report-2026-05-25.md) | QA validation for hybrid search and progressive brain-dump streaming |
 
 ## Release History
 
