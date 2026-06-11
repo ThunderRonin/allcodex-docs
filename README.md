@@ -1,4 +1,4 @@
-# AllCodex Shared Documentation
+# <img src="../../logo/grimoire.svg" width="40" height="40" align="center" style="margin-right: 10px;" /> AllCodex Shared Documentation
 
 Canonical docs for the [AllCodex ecosystem](../../AGENTS.md) — read by all three services and all AI agents.
 
