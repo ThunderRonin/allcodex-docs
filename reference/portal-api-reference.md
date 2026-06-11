@@ -1,8 +1,8 @@
 # AllCodex Portal — API Route Reference
 
 > Complete reference for all Portal Next.js API routes.
-> The Portal acts as a **secure proxy** — all backend calls happen server-side.
-> The browser never sees AllCodex ETAPI tokens or AllKnower Bearer tokens.
+> The Portal acts as a proxy; all backend calls happen server-side.
+> The browser does not receive AllCodex ETAPI tokens or AllKnower Bearer tokens.
 
 Date: April 27, 2026
 
@@ -31,18 +31,18 @@ Date: April 27, 2026
 
 ## Credential Flow
 
-All backend calls resolve credentials from HTTP-only cookies via `getEtapiCreds()` and `getAkCreds()` (defined in `lib/get-creds.ts`). If cookies are not set, the route falls back to environment variables in `.env.local`. The browser never sees tokens.
+All backend calls resolve credentials from HTTP-only cookies via `getEtapiCreds()` and `getAkCreds()` (defined in `lib/get-creds.ts`). If cookies are not set, the route falls back to environment variables in `.env.local`. The browser does not receive tokens.
 
 ```
 Browser  →  POST /api/auth/login or /api/config/allknower-login  (AllKnower: email/password → Bearer token)
          →  HTTP-only cookies set (allknower_url, allknower_token)
          →  POST /api/integrations/allcodex/connect  (Core: password → ETAPI token,
               stored as the user's encrypted UserIntegration inside AllKnower)
-         →  All subsequent /api/* calls read the AllKnower token from cookies; Core creds
+         →  Subsequent /api/* calls read the AllKnower token from cookies; Core creds
               are resolved server-side per-user by AllKnower
 ```
 
-> **Note:** In zero-login/dev deployments the AllKnower token cookie is set automatically by the auto-provisioning middleware, and Core credentials are bootstrapped into the default user's `UserIntegration` — so neither step above is required for the first user. `getEtapiCreds()` resolves Core credentials per-user via AllKnower (`resolveAllCodexCredentials`, using the AllKnower token + `PORTAL_INTERNAL_SECRET`); in non-production it falls back to the `ALLCODEX_URL` / `ALLCODEX_ETAPI_TOKEN` env vars. There is no `allcodex_token` browser cookie in the v1 flow.
+> **Note:** In zero-login/dev deployments, the auto-provisioning middleware sets the AllKnower token cookie, and Core credentials are bootstrapped into the default user's `UserIntegration`. Neither step is required for the first user. `getEtapiCreds()` resolves Core credentials per-user via AllKnower (`resolveAllCodexCredentials`, using the AllKnower token + `PORTAL_INTERNAL_SECRET`); in non-production it falls back to the `ALLCODEX_URL` / `ALLCODEX_ETAPI_TOKEN` env vars. There is no `allcodex_token` browser cookie in the v1 flow.
 
 ---
 
@@ -348,6 +348,6 @@ Token/cost usage dashboard and per-user token budgets.
 
 4. **Caching**: Image proxy caches for 1 day. Mention search caches the title list for 60 seconds.
 
-5. **Cookie-only secrets**: All tokens are stored in HTTP-only cookies with `secure=true` in production. The browser JavaScript never has access to backend credentials.
+5. **Cookie-only secrets**: All tokens are stored in HTTP-only cookies with `secure=true` in production. Browser JavaScript does not have access to backend credentials.
 
 6. **Dual backend**: Routes proxy to either AllCodex ETAPI (lore CRUD, search, content) or AllKnower (AI features, brain dump, RAG, import).
