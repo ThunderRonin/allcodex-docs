@@ -1,6 +1,6 @@
 # <img src="../../logo/grimoire.svg" width="40" height="40" align="center" style="margin-right: 10px;" /> AllCodex Shared Documentation
 
-Canonical docs for the [AllCodex ecosystem](../../AGENTS.md) — read by all three services and all AI agents.
+Canonical docs for the [AllCodex ecosystem](../../AGENTS.md), read by all three services and all AI agents.
 
 These files are checked out as a git submodule (`ThunderRonin/allcodex-docs`) in:
 - `allcodex-core/docs/shared/`
@@ -9,25 +9,25 @@ These files are checked out as a git submodule (`ThunderRonin/allcodex-docs`) in
 
 ---
 
-## Reference — Canonical Technical Docs
+## Reference: Canonical Technical Docs
 
 | File | Purpose |
 |---|---|
-| [reference/architecture.md](reference/architecture.md) | Full ecosystem architecture: services, data flows, internals, Mermaid diagram |
-| [reference/canonical-lore-schema.md](reference/canonical-lore-schema.md) | 21 lore entity types — single source of truth for AllKnower and Portal |
+| [reference/architecture.md](reference/architecture.md) | Full ecosystem architecture covering services, data flows, internals, and Mermaid diagrams |
+| [reference/canonical-lore-schema.md](reference/canonical-lore-schema.md) | 21 lore entity types, which act as the source of truth for AllKnower and Portal |
 | [reference/portal-api-reference.md](reference/portal-api-reference.md) | Complete Portal API route and method reference |
 
-## Planning — Roadmaps & Feature Work
+## Planning: Roadmaps & Feature Work
 
 | File | Purpose |
 |---|---|
-| [planning/ROADMAP.md](planning/ROADMAP.md) | DM-first feature roadmap — Phases 0–4 ✅, Phase 5 ⚠️ partial |
+| [planning/ROADMAP.md](planning/ROADMAP.md) | DM-first feature roadmap where Phases 0–4 are complete and Phase 5 is partially complete |
 | [planning/v1_final_hit_plan.md](planning/v1_final_hit_plan.md) | Final v1 release checklist and verification gates |
 | [planning/implementation_plan_phases_0_3.md](planning/implementation_plan_phases_0_3.md) | Detailed implementation plan for Phases A–G (all complete) |
 | [planning/allcodex_dm_first_scope.md](planning/allcodex_dm_first_scope.md) | Original product scope definition (still valid) |
 | ~~planning/remaining-features-plan.md~~ | Moved to archive (all features shipped) |
 
-## Analysis — Audits & Trackers
+## Analysis: Audits & Trackers
 
 | File | Purpose |
 |---|---|
@@ -42,20 +42,20 @@ These files are checked out as a git submodule (`ThunderRonin/allcodex-docs`) in
 
 | File | Purpose |
 |---|---|
-| [v1_release_changelog.md](v1_release_changelog.md) | v1 release summary — architecture boundary, user-scoped credentials, auto-provisioning, code quality |
+| [v1_release_changelog.md](v1_release_changelog.md) | v1 release summary covering the architecture boundary, user-scoped credentials, auto-provisioning, and code quality |
 
 ## Archive
 
 | File | Purpose |
 |---|---|
-| [archive/allcodex_dm_first_roadmap.md](archive/allcodex_dm_first_roadmap.md) | 📦 Archived — superseded by planning/ROADMAP.md |
-| [archive/remaining-features-plan.md](archive/remaining-features-plan.md) | 📦 Archived — all three tracked features shipped |
+| [archive/allcodex_dm_first_roadmap.md](archive/allcodex_dm_first_roadmap.md) | Archived: Superseded by planning/ROADMAP.md |
+| [archive/remaining-features-plan.md](archive/remaining-features-plan.md) | Archived: All three tracked features shipped |
 
 ---
 
 ## Quick Links
 
-- [AGENTS.md](../../AGENTS.md) — root agent guide (commands, conventions, key files, pitfalls)
-- [allcodex-core/CLAUDE.md](../../allcodex-core/CLAUDE.md) — AllCodex Core deep dive
-- [allknower/docs/ai_architecture_investigation.md](../../allknower/docs/ai_architecture_investigation.md) — RAG/AI improvement research (Refer to AllKnower's `.env.example` for current LLM model preferences)
-- [allcodex-portal/ROADMAP.md](../../allcodex-portal/ROADMAP.md) — portal-specific feature backlog
+- [AGENTS.md](../../AGENTS.md): Root agent guide covering commands, conventions, key files, and pitfalls
+- [allcodex-core/CLAUDE.md](../../allcodex-core/CLAUDE.md): AllCodex Core deep dive
+- [allknower/docs/ai_architecture_investigation.md](../../allknower/docs/ai_architecture_investigation.md): RAG/AI improvement research (Refer to AllKnower's `.env.example` for current LLM model preferences)
+- [allcodex-portal/ROADMAP.md](../../allcodex-portal/ROADMAP.md): Portal-specific feature backlog
