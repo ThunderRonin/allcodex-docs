@@ -646,8 +646,7 @@ The Portal route calls AllKnower directly from `app/api/import/azgaar/route.ts`;
 
 ## Phase 4: Player-Safe Sharing, Maps, And Import ✅
 
-> **Shipped** (sharing, system-pack import, and Azgaar import). Implementation plan: Phase G + Phase F (system-pack import) + Feature 6 (Azgaar).
-> Maps (embeds, pins, visual map viewer) are **deferred** to a future phase.
+> **Shipped** (sharing, system-pack import, Azgaar import, and Leaflet map viewer with embeds/pins). Implementation plan: Phase G + Phase F (system-pack import) + Feature 6 (Azgaar) + Phase 5 Compaction Maps.
 
 **Outcome:** selected lore can be safely shown to players; Azgaar Fantasy Map Generator JSON can be imported to seed location/faction/religion notes.
 
@@ -657,16 +656,16 @@ The Portal route calls AllKnower directly from `app/api/import/azgaar/route.ts`;
 - add GM preview versus player-safe preview
 - expose draft, GM-only, share-root, share-index, and related share controls cleanly
 - ~~add Azgaar import UI with preview, select, import, and result reporting~~ ✅ shipped
-- add map embeds to lore pages and session views *(deferred)*
-- add clickable map pins that resolve to lore notes *(deferred)*
-- add a lightweight map view for browsing linked places *(deferred)*
+- ~~add map embeds to lore pages and session views~~ ✅ shipped
+- ~~add clickable map pins that resolve to lore notes~~ ✅ shipped
+- ~~add a lightweight map view for browsing linked places~~ ✅ shipped
 
 ### AllKnower
 
 - ~~add `POST /import/azgaar` plus import history and dry-run support~~ ✅ shipped
 - ~~map Azgaar entities into AllCodex location, faction, and optional river/event notes~~ ✅ shipped
 - ~~return import results in a Portal-friendly shape with created note links and warnings~~ ✅ shipped
-- optionally generate follow-up summaries or hierarchy suggestions for imported geography *(deferred)*
+- ~~optionally generate follow-up summaries or hierarchy suggestions for imported geography~~ ✅ shipped
 
 ### AllCodex Core
 
@@ -910,4 +909,3 @@ Highest-value sequence for remaining and new work:
 2. Phase 6: 5etools homebrew export (AllCodex → 5etools JSON)
 3. Phase 6: brain dump enrichment with imported rules content
 4. MCP Server (`allcodex-mcp`): standard stdio/SSE model context protocol server
-5. Map embeds and clickable pins (deferred from Phase 4)
