@@ -1,0 +1,37 @@
+<svg width="150" height="24" viewBox="0 0 150 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="glow-dark" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffaa00" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#ffaa00" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="gold-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffe082" />
+      <stop offset="50%" stop-color="#ffaa00" />
+      <stop offset="100%" stop-color="#b17200" />
+    </linearGradient>
+  </defs>
+
+  <g transform="scale(0.12)">
+    <circle cx="100" cy="100" r="90" fill="url(#glow-dark)" />
+    <rect x="45" y="25" width="115" height="150" rx="8" fill="#120f18" stroke="url(#gold-dark)" stroke-width="2" />
+    <rect x="35" y="25" width="15" height="150" rx="3" fill="url(#gold-dark)" />
+    <line x1="39" y1="45" x2="46" y2="45" stroke="#120f18" stroke-width="2" />
+    <line x1="39" y1="75" x2="46" y2="75" stroke="#120f18" stroke-width="2" />
+    <line x1="39" y1="100" x2="46" y2="100" stroke="#120f18" stroke-width="2" />
+    <line x1="39" y1="125" x2="46" y2="125" stroke="#120f18" stroke-width="2" />
+    <line x1="39" y1="155" x2="46" y2="155" stroke="#120f18" stroke-width="2" />
+    <path d="M145 25 L160 25 L160 40 Z" fill="url(#gold-dark)" />
+    <path d="M145 175 L160 175 L160 160 Z" fill="url(#gold-dark)" />
+    <rect x="60" y="38" width="85" height="124" rx="4" fill="none" stroke="url(#gold-dark)" stroke-width="1" stroke-opacity="0.6" />
+    <circle cx="102.5" cy="100" r="28" stroke="url(#gold-dark)" stroke-width="1.5" fill="none" />
+    <circle cx="102.5" cy="100" r="22" stroke="url(#gold-dark)" stroke-width="1" fill="none" stroke-dasharray="2 2" stroke-opacity="0.8" />
+    <path d="M102.5 75 L117.2 120.2 L78.7 92.3 L126.3 92.3 L87.8 120.2 Z" stroke="url(#gold-dark)" stroke-width="1.5" fill="none" stroke-linejoin="round" />
+    <circle cx="102.5" cy="100" r="3" fill="url(#gold-dark)" />
+    <circle cx="102.5" cy="67" r="1.5" fill="url(#gold-dark)" />
+    <circle cx="102.5" cy="133" r="1.5" fill="url(#gold-dark)" />
+    <circle cx="69" cy="100" r="1.5" fill="url(#gold-dark)" />
+    <circle cx="136" cy="100" r="1.5" fill="url(#gold-dark)" />
+  </g>
+  
+  <text x="32" y="18" font-family="Cinzel, Georgia, serif" font-size="18" font-weight="bold" fill="#ffffff" letter-spacing="0.08em">AllCodex</text>
+</svg>

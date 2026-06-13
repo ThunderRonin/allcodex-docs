@@ -1,6 +1,6 @@
 # AllCodex Roadmap
 
-Date: March 31, 2026 · Updated: May 16, 2026
+Date: March 31, 2026 · Updated: June 13, 2026
 
 > **Single source of truth** for all AllCodex roadmap work across AllCodex Core, AllKnower, and AllCodex Portal.
 > When roadmap priorities conflict with component-level backlogs, this document wins.
@@ -68,7 +68,7 @@ Lightweight map embeds and pins are in scope. A full map editor is not.
 | Phase 2 | Wiki article view and knowledge architecture | `P1` | ✅ Complete |
 | Phase 3 | Session runtime and continuity guardrails | `P1→P2` | ✅ Complete |
 | Phase 4 | Player-safe sharing, maps, and import | `P2` | ✅ Complete |
-| Phase 5 | Rules reference and system-content expansion | `P3` | ⚠️ Partial (statblocks shipped, rules ref TBD) |
+| Phase 5 | Rules reference and system-content expansion | `P3` | ✅ Complete |
 | Phase 6 | 5etools bidirectional homebrew integration | `P3` | 🔜 Planned |
 
 ---
@@ -646,8 +646,7 @@ The Portal route calls AllKnower directly from `app/api/import/azgaar/route.ts`;
 
 ## Phase 4: Player-Safe Sharing, Maps, And Import ✅
 
-> **Shipped** (sharing, system-pack import, and Azgaar import). Implementation plan: Phase G + Phase F (system-pack import) + Feature 6 (Azgaar).
-> Maps (embeds, pins, visual map viewer) are **deferred** to a future phase.
+> **Shipped** (sharing, system-pack import, Azgaar import, and Leaflet map viewer with embeds/pins). Implementation plan: Phase G + Phase F (system-pack import) + Feature 6 (Azgaar) + Phase 5 Compaction Maps.
 
 **Outcome:** selected lore can be safely shown to players; Azgaar Fantasy Map Generator JSON can be imported to seed location/faction/religion notes.
 
@@ -657,16 +656,16 @@ The Portal route calls AllKnower directly from `app/api/import/azgaar/route.ts`;
 - add GM preview versus player-safe preview
 - expose draft, GM-only, share-root, share-index, and related share controls cleanly
 - ~~add Azgaar import UI with preview, select, import, and result reporting~~ ✅ shipped
-- add map embeds to lore pages and session views *(deferred)*
-- add clickable map pins that resolve to lore notes *(deferred)*
-- add a lightweight map view for browsing linked places *(deferred)*
+- ~~add map embeds to lore pages and session views~~ ✅ shipped
+- ~~add clickable map pins that resolve to lore notes~~ ✅ shipped
+- ~~add a lightweight map view for browsing linked places~~ ✅ shipped
 
 ### AllKnower
 
 - ~~add `POST /import/azgaar` plus import history and dry-run support~~ ✅ shipped
 - ~~map Azgaar entities into AllCodex location, faction, and optional river/event notes~~ ✅ shipped
 - ~~return import results in a Portal-friendly shape with created note links and warnings~~ ✅ shipped
-- optionally generate follow-up summaries or hierarchy suggestions for imported geography *(deferred)*
+- ~~optionally generate follow-up summaries or hierarchy suggestions for imported geography~~ ✅ shipped
 
 ### AllCodex Core
 
@@ -685,10 +684,9 @@ The Portal route calls AllKnower directly from `app/api/import/azgaar/route.ts`;
 
 ---
 
-## Phase 5: Rules Reference And System Content Expansion ⚠️ Partial
+## Phase 5: Rules Reference And System Content Expansion ✅
 
-> **Partially shipped.** Statblock library, system-pack import, and session-workspace statblock search are live.
-> Homebrew editing, rules-aware retrieval, and expanded template coverage remain TODO.
+> **Shipped.** Statblock library, system-pack import, session-workspace statblock search, homebrew statblock editing, and rules-aware RAG retrieval are all live.
 
 **Outcome:** AllCodex becomes more useful at the table without turning into a full rules platform.
 
@@ -893,15 +891,21 @@ Original build sequence completed:
 - `requireParameters` removed from model-router (incompatible with free-tier routing)
 - Relationship graph Phase 5: multi-hop BFS, type/confidence filters, batch apply, metrics, timeline
 
+## What Was Built (Advanced Features & Observability) ✅
+
+Six recommended feature streams fully implemented and shipped:
+- **Token Observability Dashboard**: usage page, burn charts, cost metrics, and nightly pricing aggregator.
+- **Streaming Entity Rendering**: progressive JSON parsing and card display for instant feedback.
+- **Hybrid Search**: FTS keyword search + vector retrieval combined via Reciprocal Rank Fusion (RRF) and OpenRouter Cohere rerank, with env tuning knobs.
+- **Bulk Brain Dump**: Postgres-backed job queue with single-flight worker and bulk upload page.
+- **Lore Diff & History**: revision history tracking with before/after comparisons.
+- **Push Notifications**: web-push/VAPID push notifications with in-app toast integration.
+
 ## What To Build Next
 
 Highest-value sequence for remaining and new work:
 
-1. Phase 5 completion: homebrew statblock editing, rules-aware RAG retrieval
-2. Phase 6: 5etools import pipeline (extend system-pack importer)
-3. Phase 6: 5etools homebrew export (AllCodex → 5etools JSON)
-4. Phase 6: brain dump enrichment with imported rules content
-5. Token usage dashboard (LLMCallLog data exists, no visibility)
-6. Streaming entity rendering (progressive brain dump card display)
-7. Hybrid search — keyword + vector with Cohere rerank
-8. Map embeds and clickable pins (deferred from Phase 4)
+1. Phase 6: 5etools import pipeline (extend system-pack importer)
+2. Phase 6: 5etools homebrew export (AllCodex → 5etools JSON)
+3. Phase 6: brain dump enrichment with imported rules content
+4. MCP Server (`allcodex-mcp`): standard stdio/SSE model context protocol server

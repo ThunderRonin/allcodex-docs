@@ -1,0 +1,276 @@
+---
+title: "Canonical Lore Schema"
+description: "Detailed catalog of the 21 lore types, their database attributes, and AI extraction schemas."
+---
+
+This reference outlines the schema conventions shared across AllCodex Core (SQLite database templates), AllKnower (AI extraction and Zod schemas), and the Portal frontend.
+
+---
+
+## The three-way alignment
+
+In AllCodex, lore attributes live in three states:
+1. **Database Templates (`hidden_subtree_templates.ts`)**: Promoted labels defined in the database. These render as high-priority, structured input fields in the Portal UI.
+2. **AI Extraction Schema (`lore.ts`)**: Zod-validated JSON keys that AllKnower instructs LLMs to extract during a Brain Dump.
+3. **Portal UI Render**: The client layout matches database templates. AI-extracted attributes that do not map to a database promoted label are saved as raw, unpromoted tags at the bottom of the entry.
+
+---
+
+## The 21 lore entity types
+
+This section catalogs the 21 lore entity types supported by AllCodex, detailing template IDs, database promoted attributes, and AI pipeline fields.
+
+### 1. Character
+NPCs, PCs, and historical figures.
+* **Template ID**: `_template_character`
+* **Database Promoted Attributes**:
+  * `fullName` (Text): Full name of the character.
+  * `aliases` (Text): Titles, monikers, or pseudonyms.
+  * `age` (Number): Numerical age.
+  * `race` (Text): Species or ethnic lineage.
+  * `gender` (Text): Gender expression.
+  * `affiliation` (Text): Factions, guilds, or groups.
+  * `role` (Text): Class, profession, or social role.
+  * `status` (Text): e.g. Alive, Dead, Missing.
+  * `secrets` (Text): Hidden GM-only facts.
+  * `goals` (Text): Motivations or immediate plans.
+* **AI Pipeline Schema**:
+  * Extracts all of the above plus `physicalDescription`, `personality`, and `backstory` (written directly into the note's HTML body instead of database labels).
+
+### 2. Location
+Cities, dungeons, regions, landmarks, or planes.
+* **Template ID**: `_template_location`
+* **Database Promoted Attributes**:
+  * `locationType` (Text): e.g. City, Dungeon, Region, Landmark.
+  * `region` (Text): The broader geographic area containing this location.
+  * `population` (Text): Total inhabitants or size categorization.
+  * `ruler` (Text): Factions or characters in control.
+  * `secrets` (Text): Hidden GM-only facts.
+  * `geolocation` (Text): Latitude/longitude coordinates for map pins.
+* **AI Pipeline Schema**:
+  * Extracts `locationType`, `region`, `population`, `ruler`, `secrets` plus `history`, `notableLandmarks`, and `connectedLocations` (stored as unpromoted labels).
+
+### 3. Faction
+Organizations, guilds, or political powers with goals and leadership.
+* **Template ID**: `_template_faction`
+* **Database Promoted Attributes**:
+  * `factionType` (Text): e.g. Guild, Empire, Secret Society.
+  * `foundingDate` (Text): Calendar date or era of creation.
+  * `leader` (Text): Chief NPC or council.
+  * `goals` (Text): Major objectives.
+  * `secrets` (Text): GM-only details.
+  * `status` (Text): Active, Defunct, Disbanded.
+* **AI Pipeline Schema**:
+  * Extracts `factionType`, `foundingDate`, `leader`, `goals`, `secrets` plus `members`, `allies`, `enemies`, and `hierarchy` (saved as unpromoted labels).
+
+### 4. Creature
+Monsters, beasts, or distinct entities.
+* **Template ID**: `_template_creature`
+* **Database Promoted Attributes**:
+  * `creatureType` (Text): e.g. Beast, Aberration, Undead.
+  * `habitat` (Text): Natural terrain or plane.
+  * `diet` (Text): Feeding habits.
+  * `dangerLevel` (Text): Threat level or CR indicator.
+  * `abilities` (Text): Notable traits.
+* **AI Pipeline Schema**:
+  * Extracts all of the above plus `lore` (written to HTML content) and D&D-style stats (`ac`, `hp`, `speed`, `str`, `dex`, `con`, `int`, `wis`, `cha`, `cr`).
+
+### 5. Event
+Historical occurrences, campaign sessions, or planned encounters.
+* **Template ID**: `_template_event`
+* **Database Promoted Attributes**:
+  * `date` (Text): Calendar timestamp.
+  * `location` (Text): Geopolitical node where it occurred.
+  * `participants` (Text): Active factions/NPCs.
+  * `outcome` (Text): Historical result.
+  * `secrets` (Text): GM-only details.
+* **AI Pipeline Schema**:
+  * Extracts all database promoted attributes.
+
+### 6. Timeline
+Sequences of events.
+* **Template ID**: `_template_timeline`
+* **Database Promoted Attributes**:
+  * `calendarSystem` (Text): e.g. Harptos, Gregorian.
+  * `sorted` (Text): Sorting mechanism.
+  * `sortBy` (Text): Key field to sort.
+* **AI Pipeline Schema**:
+  * Extracts `startDate`, `endDate`, and `events` (stored as unpromoted labels).
+
+### 7. Manuscript
+Books, ledgers, ancient scrolls, or in-world literature.
+* **Template ID**: `_template_manuscript`
+* **Database Promoted Attributes**:
+  * `genre` (Text): e.g. Arcane Thesis, Diary.
+  * `manuscriptStatus` (Text): e.g. Complete, Fragment, Lost.
+  * `wordCount` (Number): Document length.
+* **AI Pipeline Schema**:
+  * Extracts `wordCount` and `status` (mapped to `manuscriptStatus`).
+
+### 8. Statblock
+TTRPG stats (e.g., D&D 5e monster templates).
+* **Template ID**: `_template_statblock`
+* **Database Promoted Attributes**:
+  * `crName` (Text), `challengeRating` (Number), `crLevel` (Number).
+  * `creatureType` (Text), `size` (Text), `alignment` (Text).
+  * Stats: `ac`, `hp`, `speed`, `str`, `dex`, `con`, `int`, `wis`, `cha`.
+  * Resistances/Vulnerabilities: `immunities`, `resistances`, `vulnerabilities`.
+  * Actions: `abilities`, `actions`, `legendaryActions`.
+* **AI Pipeline Schema**:
+  * Extracts `system` and `cr` alongside standard stats, mapping actions and abilities to the database.
+
+### 9. Item
+Equipment, artifacts, weapons, or key campaign items.
+* **Template ID**: `_template_item`
+* **Database Promoted Attributes**:
+  * `itemType` (Text): e.g. Weapon, Wondrous Item, Potion.
+  * `rarity` (Text): e.g. Common, Rare, Legendary.
+  * `creator` (Text): Historical figure or faction.
+  * `magicProperties` (Text): Enchantments.
+  * `history` (Text): Origins.
+* **AI Pipeline Schema**:
+  * Extracts all of the above plus `currentOwner` and `secrets` (unpromoted).
+
+### 10. Spell
+Magical incantations or abilities.
+* **Template ID**: `_template_spell`
+* **Database Promoted Attributes**:
+  * `school` (Text): e.g. Evocation, Necromancy.
+  * `level` (Number): Spell level (0 for cantrips).
+  * `castingTime` (Text): Action, Bonus Action, Hours.
+  * `range` (Text): Distance.
+  * `components` (Text): V, S, M (and materials).
+  * `duration` (Text): Concentration, Instantaneous.
+* **AI Pipeline Schema**:
+  * Extracts all of the above plus `origin` and `secrets` (unpromoted).
+
+### 11. Building
+Specific structural objects like taverns, keeps, or shrines.
+* **Template ID**: `_template_building`
+* **Database Promoted Attributes**:
+  * `buildingType` (Text): Tavern, Castle, Temple.
+  * `owner` (Text): Proprietor or faction.
+  * `purpose` (Text): Role in town.
+  * `condition` (Text): Ruined, Pristine, Under Construction.
+  * `secrets` (Text): GM-only details.
+* **AI Pipeline Schema**:
+  * Extracts all of the above plus `location` (unpromoted).
+
+### 12. Language
+In-world speaking tongues and alphabets.
+* **Template ID**: `_template_language`
+* **Database Promoted Attributes**:
+  * `languageFamily` (Text), `speakers` (Text), `script` (Text), `samplePhrase` (Text).
+* **AI Pipeline Schema**:
+  * Extracts all of the above plus `origin` (unpromoted).
+
+### 13. Organization
+Guilds, clubs, or non-political local groups.
+* **Template ID**: `_template_organization`
+* **Database Promoted Attributes**:
+  * `orgType` (Text), `leader` (Text), `headquarters` (Text), `membership` (Text), `purpose` (Text), `status` (Text), `secrets` (Text).
+* **AI Pipeline Schema**:
+  * Extracts `orgType`, `purpose`, `foundingDate`, `leader`, `headquarters`, `status`, `secrets` plus `members` and `resources` (unpromoted).
+
+### 14. Race
+Species, sub-species, or ethnic groups.
+* **Template ID**: `_template_race`
+* **Database Promoted Attributes**:
+  * `homeland` (Text), `lifespan` (Text), `traits` (Text), `culture` (Text), `relations` (Text).
+* **AI Pipeline Schema**:
+  * Extracts `homeland`, `lifespan`, `culture`, `abilities`, `racialType`, `physicalTraits` (which maps to `traits`), `languages`, `relations`, and `secrets`.
+
+### 15. Myth
+Lore legends or folklore.
+* **Template ID**: `_template_myth`
+* **Database Promoted Attributes**:
+  * `mythType` (Text), `origin` (Text), `truthStatus` (Text), `relatedEntities` (Text).
+* **AI Pipeline Schema**:
+  * Extracts `mythType`, `origin` plus `tellers`, `truthBasis`, `significance`, and `secrets` (saved as unpromoted).
+
+### 16. Cosmology
+Planes of existence or cosmic dimensions.
+* **Template ID**: `_template_cosmology`
+* **Database Promoted Attributes**:
+  * `planes` (Text), `cosmicForces` (Text), `afterlife` (Text), `creationMyth` (Text).
+* **AI Pipeline Schema**:
+  * Extracts `planes` plus `domain`, `laws`, `source`, `interactions`, and `secrets` (unpromoted).
+
+### 17. Deity
+Gods, pantheons, or celestial powers.
+* **Template ID**: `_template_deity`
+* **Database Promoted Attributes**:
+  * `domain` (Text), `alignment` (Text), `symbol` (Text), `worshippers` (Text), `divineStatus` (Text).
+* **AI Pipeline Schema**:
+  * Extracts `alignment`, `symbol`, `worshippers` plus `domains` (plural), `rank`, `allies`, `enemies`, and `secrets` (unpromoted).
+
+### 18. Religion
+Organized faiths and belief networks.
+* **Template ID**: `_template_religion`
+* **Database Promoted Attributes**:
+  * `deity` (Text), `tenets` (Text), `practices` (Text), `holyText` (Text), `faithStatus` (Text).
+* **AI Pipeline Schema**:
+  * Extracts `deity`, `tenets` plus `pantheon`, `clergy`, `holyDays`, `headquarters`, `followers`, and `secrets` (unpromoted).
+
+### 19. Session
+TTRPG campaign recap entries.
+* **Template ID**: `_template_session`
+* **Database Promoted Attributes**:
+  * `sessionDate` (Text): Real-world game date.
+  * `players` (Text): List of active players.
+  * `sessionStatus` (Text): e.g. Played, Cancelled, Scheduled.
+  * `recap` (Text): Campaign events.
+  * `hooks` (Text): Unresolved clues or tasks.
+  * `gmNotes` (Text): Secret GM ledger.
+* **AI Pipeline Schema**:
+  * Extracts `sessionDate`, `players`, `sessionStatus`, `recap`, `hooks`.
+
+### 20. Quest
+Campaign objectives or milestones.
+* **Template ID**: `_template_quest`
+* **Database Promoted Attributes**:
+  * `questStatus` (Text): Must be `active`, `completed`, `failed`, or `deferred`.
+  * `questGiver` (Text): Entity initiating the quest.
+  * `reward` (Text): EXP, gold, or items.
+  * `location` (Text): Destination node.
+  * `hooks` (Text): Plot hooks.
+  * `consequences` (Text): Results of completion or failure.
+* **AI Pipeline Schema**:
+  * Extracts all of the above (allowing `"unknown"` status as a fallback).
+
+### 21. Scene
+Encounters, locations, or isolated narrative units.
+* **Template ID**: `_template_scene`
+* **Database Promoted Attributes**:
+  * `location` (Text): Context location node.
+  * `participants` (Text): Involved NPCs/monsters.
+  * `outcome` (Text): Resolving event.
+  * `gmNotes` (Text): Secret notes.
+* **AI Pipeline Schema**:
+  * Extracts all of the above.
+
+---
+
+## Canonical relation types
+
+The AI auto-relate pipeline suggests and applies these 17 bidirectional relationship types. Each is mapped to a Core relation attribute prefixed with `~rel`.
+
+| Canonical Type | Core Relation Name | Inverse Canonical |
+| :--- | :--- | :--- |
+| `ally` | `~relAlly` | `ally` |
+| `enemy` | `~relEnemy` | `enemy` |
+| `rival` | `~relRival` | `rival` |
+| `family` | `~relFamily` | `family` |
+| `member_of` | `~relMemberOf` | `has_member` |
+| `leader_of` | `~relLeaderOf` | `led_by` |
+| `serves` | `~relServes` | `served_by` |
+| `located_in` | `~relLocatedIn` | `contains` |
+| `originates_from` | `~relOriginatesFrom` | `origin_of` |
+| `participated_in` | `~relParticipatedIn` | `has_participant` |
+| `caused` | `~relCaused` | `caused_by` |
+| `created` | `~relCreated` | `created_by` |
+| `owns` | `~relOwns` | `owned_by` |
+| `wields` | `~relWields` | `wielded_by` |
+| `worships` | `~relWorships` | `worshipped_by` |
+| `inhabits` | `~relInhabits` | `inhabited_by` |
+| `related_to` | `~relRelatedTo` | `related_to` |

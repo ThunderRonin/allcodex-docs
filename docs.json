@@ -1,0 +1,113 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "AllCodex",
+  "colors": {
+    "primary": "#ffaa00",
+    "light": "#b17200",
+    "dark": "#ffaa00"
+  },
+  "background": {
+    "color": {
+      "light": "#f5f2eb",
+      "dark": "#0e0d12"
+    }
+  },
+  "favicon": "/favicon.svg",
+  "fonts": {
+    "heading": {
+      "family": "Cinzel"
+    },
+    "body": {
+      "family": "Crimson Text"
+    }
+  },
+  "navigation": {
+    "pages": [
+      {
+        "group": "Getting Started",
+        "pages": [
+          "introduction",
+          "quickstart"
+        ]
+      },
+      {
+        "group": "Concepts",
+        "pages": [
+          "concepts/architecture",
+          "concepts/everything-is-a-note",
+          "concepts/lore-types"
+        ]
+      },
+      {
+        "group": "Guides",
+        "pages": [
+          "guides/brain-dump",
+          "guides/ai-tools",
+          "guides/relationship-graph",
+          "guides/sharing-lore",
+          "guides/hybrid-search",
+          "guides/token-observability"
+        ]
+      },
+      {
+        "group": "Reference",
+        "pages": [
+          "reference/lore-schema",
+          "reference/portal-api",
+          "reference/lore-labels"
+        ]
+      },
+      {
+        "group": "Self-Hosting",
+        "pages": [
+          "self-hosting/overview",
+          "self-hosting/docker",
+          "self-hosting/configuration",
+          "self-hosting/upgrading"
+        ]
+      },
+      {
+        "group": "Contributing",
+        "pages": [
+          "contributing/overview"
+        ]
+      },
+      {
+        "group": "Changelog",
+        "pages": [
+          "changelog/overview"
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "AllCodex GitHub",
+        "href": "https://github.com/ThunderRonin/allcodex-aio"
+      }
+    ]
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/ThunderRonin/allcodex-aio"
+    }
+  }
+}

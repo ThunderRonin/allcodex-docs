@@ -1,35 +1,13 @@
-# AllCodex Portal — API Route Reference
+---
+title: "Portal API Proxy"
+description: "Reference guide for all AllCodex Portal Next.js API proxy routes."
+---
 
-> Complete reference for all Portal Next.js API routes.
-> The Portal acts as a proxy; all backend calls happen server-side.
-> The browser does not receive AllCodex ETAPI tokens or AllKnower Bearer tokens.
-
-Date: April 27, 2026
+The Portal acts as a Backend for Frontend (BFF) proxy. The browser does not communicate directly with the database (AllCodex Core) or the AI brain (AllKnower). It sends requests to `/api/*` on the Portal, which parses authentication cookies server-side and forwards requests to private backends.
 
 ---
 
-## Table of Contents
-
-- [Credential Flow](#credential-flow)
-- [Lore CRUD](#lore-crud)
-- [Note Attributes & Relationships](#note-attributes--relationships)
-- [Note Content & Metadata](#note-content--metadata)
-- [Lore Tree Operations](#lore-tree-operations)
-- [Search & Discovery](#search--discovery)
-- [Brain Dump](#brain-dump)
-- [AI Tools](#ai-tools)
-- [RAG](#rag)
-- [Content Collections](#content-collections)
-- [Share Settings](#share-settings)
-- [Configuration & Auth](#configuration--auth)
-- [Import](#import)
-- [Notifications](#notifications)
-- [Usage & Budgets](#usage--budgets)
-- [Key Patterns](#key-patterns)
-
----
-
-## Credential Flow
+## Credential flow
 
 All backend calls resolve credentials from HTTP-only cookies via `getEtapiCreds()` and `getAkCreds()` (defined in `lib/get-creds.ts`). If cookies are not set, the route falls back to environment variables in `.env.local`. The browser does not receive tokens.
 
@@ -42,21 +20,25 @@ Browser  →  POST /api/auth/login or /api/config/allknower-login  (AllKnower: e
               are resolved server-side per-user by AllKnower
 ```
 
-> **Note:** In zero-login/dev deployments, the auto-provisioning middleware sets the AllKnower token cookie, and Core credentials are bootstrapped into the default user's `UserIntegration`. Neither step is required for the first user. `getEtapiCreds()` resolves Core credentials per-user via AllKnower (`resolveAllCodexCredentials`, using the AllKnower token + `PORTAL_INTERNAL_SECRET`); in non-production it falls back to the `ALLCODEX_URL` / `ALLCODEX_ETAPI_TOKEN` env vars. There is no `allcodex_token` browser cookie in the v1 flow.
+<Warning>
+  **Zero-login auto-provisioning**: In dev/zero-login deployments, the auto-provisioning middleware sets the AllKnower token cookie, and Core credentials are bootstrapped into the default user's `UserIntegration` — so neither step above is required for the first user.
+</Warning>
 
 ---
 
 ## Lore CRUD
 
+These routes proxy requests directly to the AllCodex Core ETAPI.
+
 | Method | Path | Description | Backend |
-|--------|------|-------------|---------|
+| :--- | :--- | :--- | :--- |
 | `GET` | `/api/lore` | Search lore notes. Default: `?q=#lore` (all lore). Supports full ETAPI search syntax. | AllCodex ETAPI |
 | `POST` | `/api/lore` | Create a new lore note. | AllCodex ETAPI |
 | `GET` | `/api/lore/[id]` | Get note metadata + attributes. | AllCodex ETAPI |
 | `PATCH` | `/api/lore/[id]` | Update note properties (title, type, mime). | AllCodex ETAPI |
 | `DELETE` | `/api/lore/[id]` | Delete a note. Returns 204. | AllCodex ETAPI |
 
-### POST `/api/lore` — Create Note
+### POST `/api/lore` — create note example
 
 ```json
 {
@@ -72,19 +54,21 @@ Browser  →  POST /api/auth/login or /api/config/allknower-login  (AllKnower: e
 
 ---
 
-## Note Attributes & Relationships
+## Note attributes and relationships
 
 | Method | Path | Description | Backend |
-|--------|------|-------------|---------|
+| :--- | :--- | :--- | :--- |
 | `POST` | `/api/lore/[id]/attributes` | Create a label or relation attribute. | AllCodex ETAPI |
 | `DELETE` | `/api/lore/[id]/attributes?attrId=<ID>` | Delete an attribute by ID. Returns 204. | AllCodex ETAPI |
 | `POST` | `/api/lore/[id]/relationships` | Get existing relations + AI-suggested connections for a note. | AllKnower + AllCodex ETAPI |
 
-### POST `/api/lore/[id]/attributes` — Create Attribute
+### POST `/api/lore/[id]/attributes` — create label
 
 ```json
 { "type": "label", "name": "fullName", "value": "Lord Ashvane" }
 ```
+
+### POST `/api/lore/[id]/attributes` — create relation
 
 ```json
 { "type": "relation", "name": "~belongsTo", "value": "<targetNoteId>" }
@@ -92,10 +76,10 @@ Browser  →  POST /api/auth/login or /api/config/allknower-login  (AllKnower: e
 
 ---
 
-## Note Content & Metadata
+## Note content, revisions, and media
 
 | Method | Path | Description | Backend |
-|--------|------|-------------|---------|
+| :--- | :--- | :--- | :--- |
 | `GET` | `/api/lore/[id]/content` | Get the HTML content of a note. Returns `text/html`. | AllCodex ETAPI |
 | `PUT` | `/api/lore/[id]/content` | Update the HTML content of a note. Body: raw HTML string. Returns 204. | AllCodex ETAPI |
 | `GET` | `/api/lore/[id]/preview?mode=gm\|player` | Get sanitized HTML content. `gm` mode uses `sanitizeLoreHtml()`, `player` mode uses `sanitizePlayerView()` (strips `gmOnly` content). | AllCodex ETAPI |
@@ -112,10 +96,10 @@ Browser  →  POST /api/auth/login or /api/config/allknower-login  (AllKnower: e
 
 ---
 
-## Lore Tree Operations
+## Lore tree operations
 
 | Method | Path | Description | Backend |
-|--------|------|-------------|---------|
+| :--- | :--- | :--- | :--- |
 | `POST` | `/api/lore/move` | Move a note to a different parent branch. | AllCodex ETAPI |
 | `POST` | `/api/lore/upload-image` | Upload an image file and create an AllCodex image note. Returns `{ url, noteId }`. | AllCodex ETAPI |
 
@@ -127,14 +111,14 @@ Browser  →  POST /api/auth/login or /api/config/allknower-login  (AllKnower: e
 
 ### POST `/api/lore/upload-image`
 
-Binary image body. Set `x-vercel-filename` header for the file name.
+Send binary image body. Set `x-vercel-filename` header for the file name.
 
 ---
 
-## Search & Discovery
+## Search and discovery
 
 | Method | Path | Description | Backend |
-|--------|------|-------------|---------|
+| :--- | :--- | :--- | :--- |
 | `GET` | `/api/lore/mention-search?q=<text>` | Autocomplete for `@`-mentions. Min 2 chars. Returns up to 8 results. | AllCodex ETAPI + AllKnower |
 | `GET` | `/api/lore/note-search?q=<text>&type=<type>` | Title/type note search for picker-style UI. Min 2 chars. Returns up to 12 results. | AllCodex ETAPI |
 | `POST` | `/api/lore/autolink` | Scan a text block for lore title matches. Cached 60s. | AllCodex ETAPI |
@@ -156,10 +140,10 @@ Returns:
 
 ---
 
-## Brain Dump
+## Brain dump
 
 | Method | Path | Description | Backend |
-|--------|------|-------------|---------|
+| :--- | :--- | :--- | :--- |
 | `POST` | `/api/brain-dump` | Process raw text through the AI extraction pipeline. | AllKnower |
 | `POST` | `/api/brain-dump/stream` | SSE-streamed auto brain dump (progressive entity cards, tokens, done). | AllKnower |
 | `POST` | `/api/brain-dump/commit` | Commit reviewed entities from review mode. | AllKnower |
@@ -197,10 +181,10 @@ Returns:
 
 ---
 
-## AI Tools
+## AI tools and copilot
 
 | Method | Path | Description | Backend |
-|--------|------|-------------|---------|
+| :--- | :--- | :--- | :--- |
 | `POST` | `/api/ai/consistency` | Run a RAG-augmented consistency scan. | AllKnower |
 | `GET\|POST` | `/api/ai/gaps` | Detect underdeveloped lore areas. POST preferred (avoids caching). | AllKnower |
 | `POST` | `/api/ai/relationships` | Get AI relationship suggestions for text/note. | AllKnower |
@@ -215,9 +199,7 @@ Returns:
 { "noteIds": ["abc123", "def456"] }
 ```
 
-Optional `noteIds` — if omitted, AllKnower uses semantic sampling mode.
-
-### PUT `/api/ai/relationships` — Apply
+### PUT `/api/ai/relationships` — apply
 
 ```json
 {
@@ -234,49 +216,49 @@ Optional `noteIds` — if omitted, AllKnower uses semantic sampling mode.
 ## RAG
 
 | Method | Path | Description | Backend |
-|--------|------|-------------|---------|
+| :--- | :--- | :--- | :--- |
 | `GET` | `/api/rag?text=<query>&topK=10` | Semantic similarity search against the lore vector index. | AllKnower |
 | `POST` | `/api/rag` | Same, via POST body. | AllKnower |
 
 ---
 
-## Content Collections
+## Content collections
 
 These routes query AllCodex ETAPI for notes with specific labels.
 
 | Method | Path | Description | Filter |
-|--------|------|-------------|--------|
+| :--- | :--- | :--- | :--- |
 | `GET` | `/api/quests` | List all quest notes. | `#quest` label |
 | `GET` | `/api/statblocks` | List all statblock notes. | `#statblock` label |
 | `GET` | `/api/timeline` | List events and timelines. | `#loreType=event` OR `#loreType=timeline` |
 
 ---
 
-## Share Settings
+## Share settings
 
 | Method | Path | Description | Backend |
-|--------|------|-------------|---------|
+| :--- | :--- | :--- | :--- |
 | `GET` | `/api/share` | Get the current share root configuration. | AllCodex ETAPI |
 | `PUT` | `/api/share` | Set a note as the share root (public entry point). | AllCodex ETAPI |
 | `GET` | `/api/share/tree` | List all lore notes with share visibility flags. | AllCodex ETAPI |
 
-### GET `/api/share/tree` — Response
+### GET `/api/share/tree` — response fields
 
 Each note includes: `noteId`, `title`, `isDraft`, `isGmOnly`, `shareAlias`, `isProtected`, `isShared`.
 
 ---
 
-## Configuration & Auth
+## Configuration and auth
 
 | Method | Path | Description | Backend |
-|--------|------|-------------|---------|
+| :--- | :--- | :--- | :--- |
 | `POST` | `/api/auth/login` | AllKnower email/password login → sets Bearer token cookie. | AllKnower (better-auth) |
 | `POST` | `/api/auth/register` | Register AllKnower account → sets token cookie. | AllKnower (better-auth) |
 | `POST` | `/api/auth/logout` | Sign out, clear AllKnower session cookie. | AllKnower (better-auth) |
 | `GET` | `/api/auth/session` | Verify AllKnower session, return user. | AllKnower (better-auth) |
 | `POST` | `/api/config/allknower-login` | AllKnower email/password login → sets Bearer token cookie. | AllKnower (better-auth) |
 | `POST` | `/api/config/allknower-register` | Register AllKnower account → sets token cookie. | AllKnower (better-auth) |
-| `POST` | `/api/integrations/allcodex/connect` | Core password (or pre-acquired token) → obtains ETAPI token → stores it as the user's encrypted `UserIntegration` in AllKnower (no `allcodex_token` browser cookie). | AllCodex ETAPI + AllKnower |
+| `POST` | `/api/integrations/allcodex/connect` | Core password (or pre-acquired token) → obtains ETAPI token → stores it as the user's encrypted `UserIntegration` in AllKnower. | AllCodex ETAPI + AllKnower |
 | `GET` | `/api/integrations/allcodex/status` | Whether a Core integration is connected for the user. | AllKnower |
 | `DELETE` | `/api/integrations/allcodex` | Remove the user's stored Core integration. | AllKnower |
 | `DELETE` | `/api/config/disconnect?service=allcodex\|allknower\|all` | Clear stored credentials. | None (local) |
@@ -286,51 +268,33 @@ Each note includes: `noteId`, `title`, `isDraft`, `isGmOnly`, `shareAlias`, `isP
 | `PUT` | `/api/config/portal` | Set portal config. | None (local) |
 | `GET` | `/api/config/status` | Check connectivity to AllCodex and AllKnower. | Both |
 
-### POST `/api/integrations/allcodex/connect`
-
-```json
-{ "baseUrl": "http://localhost:8080", "password": "your-password" }
-```
-
-### POST `/api/auth/login`
-
-```json
-{ "url": "http://localhost:3001", "email": "gm@example.com", "password": "secret" }
-```
-
 ---
 
 ## Import
 
 | Method | Path | Description | Backend |
-|--------|------|-------------|---------|
-| `POST` | `/api/import/system-pack` | Import a system pack (SRD, monster manual, etc.) | AllKnower |
-| `POST` | `/api/import/azgaar` | Import parsed Azgaar Fantasy Map Generator JSON. Body: `{ mapData, parentNoteId?, options? }`. Use `?action=preview` to preview entities without creating notes; omit the parameter to execute the full import. | AllKnower |
-
-The system pack request body is the full system pack JSON. AllKnower creates statblock notes with `#statblock` labels, skips duplicates by title, and returns created/skipped counts.
-
-The Azgaar import page accepts `.map`/JSON files in the browser, parses them client-side, and sends the parsed JSON to this route. Preview mode returns a summary of entities that would be created without writing anything. Full import creates location, faction, religion, race, and map-note entries, skips duplicates by title when enabled, and returns per-entity created/skipped/error buckets.
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/import/system-pack` | Import a system pack (SRD, monster manual, etc.). | AllKnower |
+| `POST` | `/api/import/azgaar` | Import Azgaar Fantasy Map JSON. Supports `?action=preview` for simulation. | AllKnower |
 
 ---
 
 ## Notifications
 
-Web-push notifications (e.g. brain dump completion).
+Web-push notifications (e.g. brain dump completion status).
 
 | Method | Path | Description | Backend |
-|--------|------|-------------|---------|
+| :--- | :--- | :--- | :--- |
 | `GET` | `/api/notifications/vapid-public-key` | Get the VAPID public key for push subscription. | AllKnower |
 | `POST` | `/api/notifications/subscribe` | Register a browser push subscription. | AllKnower |
 | `DELETE` | `/api/notifications/unsubscribe` | Remove a push subscription. | AllKnower |
 
 ---
 
-## Usage & Budgets
-
-Token/cost usage dashboard and per-user token budgets.
+## Usage and budgets
 
 | Method | Path | Description | Backend |
-|--------|------|-------------|---------|
+| :--- | :--- | :--- | :--- |
 | `GET` | `/api/usage/summary` | Token/cost usage summary (per day, task, model). | AllKnower |
 | `GET` | `/api/usage/budgets` | Get the user's token-budget thresholds. | AllKnower |
 | `PUT` | `/api/usage/budgets` | Set the user's token-budget thresholds. | AllKnower |
@@ -338,16 +302,10 @@ Token/cost usage dashboard and per-user token budgets.
 
 ---
 
-## Key Patterns
+## Key developer patterns
 
 1. **Proxy architecture**: Every `/api/*` route is a thin proxy. No domain logic lives in the Portal.
-
-2. **Error handling**: Routes call `notConfigured()` when backend credentials are missing and `handleRouteError()` for exceptions. The `ServiceError` class wraps upstream errors.
-
-3. **HTML sanitization**: Content routes use `sanitizeLoreHtml()` (DOMPurify) for GM view and `sanitizePlayerView()` for player-safe output.
-
-4. **Caching**: Image proxy caches for 1 day. Mention search caches the title list for 60 seconds.
-
-5. **Cookie-only secrets**: All tokens are stored in HTTP-only cookies with `secure=true` in production. Browser JavaScript does not have access to backend credentials.
-
-6. **Dual backend**: Routes proxy to either AllCodex ETAPI (lore CRUD, search, content) or AllKnower (AI features, brain dump, RAG, import).
+2. **Error handling**: Routes call `notConfigured()` when credentials are missing and `handleRouteError()` for exceptions.
+3. **HTML sanitization**: The Portal performs DOMPurify sanitization. Do not assume content from ETAPI is safe for direct HTML insertion.
+4. **Content-Type constraint**: PUT requests to `/api/lore/[id]/content` **must** use `Content-Type: text/plain` due to Express raw-parser behavior in Core.
+5. **Cookie-only secrets**: The system stores all tokens in HTTP-only cookies. Browser JavaScript does not have access to credentials.

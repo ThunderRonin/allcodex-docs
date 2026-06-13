@@ -1,0 +1,83 @@
+---
+title: "Configuration Reference"
+description: "Environment variables and model configuration options for all three services."
+---
+
+AllCodex services use environment variables for configuration. The following tables list the available variables.
+
+---
+
+## AllCodex Core (database)
+
+These variables configure database paths, ports, and startup credentials.
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `PORT` | `8080` | The port the Express HTTP server binds to on the host. |
+| `TRILIUM_DATA_DIR` | `/srv/allcodex/core-data` | Directory where SQLite files, backups, and configurations are stored. |
+| `ALLCODEX_PASSWORD`| (none) | Startup password for the database. **Required** for zero-login auto-provisioning. |
+| `USER_UID` | `999` | UID to run the server process as inside the container. |
+| `USER_GID` | `988` | GID to run the server process as inside the container. |
+
+---
+
+## AllKnower (AI brain)
+
+These variables configure database models, connections, OpenRouter keys, and model selections.
+
+### System settings
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `PORT` | `3001` | The port the Elysia server binds to. |
+| `DATABASE_URL` | (none) | PostgreSQL connection URI for Prisma (accounts, history, and budgets). |
+| `LANCE_DB_PATH` | `/srv/allcodex/knower-data/lancedb` | Directory where LanceDB vector and FTS tables are persisted. |
+| `OPENROUTER_API_KEY`| (none) | Your OpenRouter API Key. |
+| `OPENROUTER_BASE_URL`| `https://openrouter.ai/api/v1` | Custom OpenRouter API base endpoint. |
+| `PORTAL_INTERNAL_SECRET`| (none) | A secure, random token shared with the Portal to verify auto-provisioning. |
+| `BETTER_AUTH_SECRET` | (none) | Secret used by better-auth to sign cookies and tokens. Must be $\ge 16$ characters in production. |
+| `BETTER_AUTH_URL` | `http://localhost:3001` | The canonical URL of the AllKnower auth server. |
+| `INTEGRATION_CREDENTIALS_KEY`| (none) | **Critical in production.** A 32-byte key (represented as a 64-character hex string) that encrypts database credentials at rest. |
+
+### Web push and email notifications
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `VAPID_PUBLIC_KEY` | (none) | VAPID public key for Web Push notifications. |
+| `VAPID_PRIVATE_KEY`| (none) | VAPID private key for Web Push notifications. |
+| `VAPID_SUBJECT` | `mailto:admin@example.com` | Notification sender contact email address. |
+| `RESEND_API_KEY` | (none) | Resend email delivery API key. |
+| `RESEND_FROM_EMAIL`| `noreply@allcodex.local` | The email address from which budget alerts are sent. |
+
+Override the default models for specific tasks. Each task supports a primary model and up to three fallback models.
+
+| Task | Variable | Default Model |
+| :--- | :--- | :--- |
+| **Brain Dump** | `BRAIN_DUMP_MODEL` | `deepseek/deepseek-v4-pro` |
+| **Consistency Checker**| `CONSISTENCY_MODEL` | `deepseek/deepseek-v4-pro` |
+| **Relationship Suggester**| `SUGGEST_MODEL` | `google/gemini-3.1-flash-lite` |
+| **Gap Detector** | `GAP_DETECT_MODEL` | `deepseek/deepseek-v4-pro` |
+| **Autocomplete** | `AUTOCOMPLETE_MODEL` | `openai/gpt-5-nano` |
+| **Embeddings** | `EMBEDDING_CLOUD` | `qwen/qwen3-embedding-8b` |
+| **Rerank** | `RERANK_MODEL` | `cohere/rerank-4-pro` |
+
+* **Fallback syntax**: Append `_FALLBACK_1`, `_FALLBACK_2`, or `_FALLBACK_3` to any model key (e.g. `BRAIN_DUMP_MODEL_FALLBACK_1=google/gemini-2.5-pro`).
+* **Auto route**: Set `USE_OPENROUTER_AUTO=true` to let OpenRouter automatically select the best model for all tasks.
+
+---
+
+## AllCodex Portal (frontend)
+
+These variables configure connections to backend services and secret handshakes.
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `PORT` | `3000` | Port the Next.js production server runs on. |
+| `ALLCODEX_URL` | `http://localhost:8080` | The private network URL of the running AllCodex Core container. |
+| `ALLKNOWER_URL` | `http://localhost:3001` | The private network URL of the running AllKnower container. |
+| `PORTAL_INTERNAL_SECRET`| (none) | **Critical.** Must match `PORTAL_INTERNAL_SECRET` in AllKnower to authorize session cookies. |
+| `NEXT_PUBLIC_PORTAL_URL`| `http://localhost:3000` | The public URL of the portal, used to generate player-facing share links. |
+| `LORE_ROOT_NOTE_ID` | (none) | System fallback default root lore note ID. |
+| `ALLCODEX_ETAPI_TOKEN`| (none) | System fallback token for Core database connections. |
+| `ALLKNOWER_BEARER_TOKEN`| (none) | System fallback token for AllKnower communication. |
+| `VAPID_PUBLIC_KEY` | (none) | Public key for push notification client subscriptions. |

@@ -1,0 +1,76 @@
+---
+title: "Developer Contribution Guide"
+description: "Monorepo structure, coding conventions, testing guidelines, and submodule workflows."
+---
+
+AllCodex is an open-source monorepo containing three core services. This guide covers developer environment setup, coding conventions, testing, and Git submodule pointers.
+
+---
+
+## Monorepo layout
+
+The repository contains a parent repository and three Git submodules:
+
+* **`allcodex-core/`**: Headless backend (Express 5, SQLite, pnpm monorepo).
+* **`allknower/`**: AI orchestrator (Elysia, Bun, Prisma/Postgres, LanceDB).
+* **`allcodex-portal/`**: Next.js App Router frontend (React 19, Bun, Tailwind 4, shadcn/ui).
+* **`docs/shared/`**: Markdown documentation (git submodule `ThunderRonin/allcodex-docs`).
+
+---
+
+## Coding conventions and tech stack
+
+### 1. AllCodex Core
+- **Runtime**: Node.js v22 (Node 26 breaks SQLite bindings).
+- **Package Manager**: `pnpm`.
+- **Conventions**:
+  - TypeScript strict mode, target ES2022.
+  - Sibling modules **must** be imported with `.js` extensions (NodeNext resolution).
+  - 4-space indentation, double quotes, semicolons, no trailing commas.
+  - ESLint flat configuration.
+- **Testing**:
+  - Vitest for unit tests, Playwright for E2E.
+  - Run tests sequentially since they share database states: `pnpm test:sequential`.
+
+### 2. AllKnower
+- **Runtime**: Bun.
+- **Conventions**:
+  - Bun ESM modules (`"type": "module"`).
+  - TypeScript strict mode, bundler resolution.
+  - Imports **must** use `.ts` extensions.
+  - Elysia `t` schemas at HTTP boundaries; Zod for internal validation.
+- **Testing**:
+  - Run unit and integration tests using Bun's test runner: `bun test`.
+  - Use `mock.module()` for third-party service mock isolation.
+
+### 3. AllCodex Portal
+- **Framework**: Next.js 16 (App Router) + React 19 with React Compiler enabled.
+- **State Management**: Zustand for dedicated global client stores (`useBrainDumpStore`), TanStack Query for server state.
+- **Styling**: Tailwind CSS 4 with shadcn/ui.
+- **HTML Sanitization**: Sanitize all note body HTML using DOMPurify (`lib/sanitize.ts`) via `sanitizeLoreHtml()` for GM details or `sanitizePlayerView()` for player-safe outputs before rendering it to the browser.
+- **Testing**:
+  - Vitest for unit testing.
+  - Playwright for integration testing.
+
+---
+
+## Submodule workflow
+
+Each service is a Git submodule pointing to a separate GitHub repository. Follow this workflow when committing changes:
+
+1. **Commit Submodule Changes First**: Change directories into the submodule, stage files, and commit/push your changes.
+2. **Update Parent Pointer**: Change directory back to the monorepo root, stage the submodule directory pointer, and commit the update.
+
+```bash
+# 1. Edit and commit inside allknower submodule
+cd allknower
+git add .
+git commit -m "feat: improve relationship suggester caching"
+git push origin main
+
+# 2. Update the parent monorepo
+cd ..
+git add allknower
+git commit -m "chore: update allknower submodule pointer"
+git push origin main
+```

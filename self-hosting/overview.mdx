@@ -1,0 +1,51 @@
+---
+title: "Self-Hosting Overview"
+description: "Requirements, port allocations, and persistence layouts for hosting AllCodex."
+---
+
+AllCodex is designed to be self-hosted. You can run the entire platform on a home server, a local machine, or a cloud VPS (Virtual Private Server).
+
+---
+
+## System requirements
+
+Before deploying AllCodex, ensure your host environment meets the following specifications:
+
+| Requirement | Recommended | Minimum | Notes |
+| :--- | :--- | :--- | :--- |
+| **Operating System**| Linux (Ubuntu/Debian) | macOS / Windows | Docker runs with optimal stability on native Linux. |
+| **CPU** | 2 Cores | 1 Core | Vector search and AI parsing require light compute. |
+| **RAM** | 4 GB | 2 GB | Headless Trilium (Core) caches notes in-memory. |
+| **Disk Space** | 10 GB | 2 GB | Dependent on map uploads and database size. |
+| **API Keys** | OpenRouter API Key | OpenRouter API Key | Required by AllKnower for LLM and embeddings. |
+
+---
+
+## Port allocations
+
+AllCodex exposes three main web ports. Ensure these ports are open on your host machine and not blocked by local firewalls (like `ufw` or `iptables`):
+
+* **`3000` (AllCodex Portal)**: The main user interface. This is the only port you need to expose to your local network or reverse proxy to access the grimoire.
+* **`3001` (AllKnower)**: The AI backend API. Must be reachable by the Portal server-side, but does *not* need to be exposed to the public internet.
+* **`8080` (AllCodex Core)**: The lore database and public share server. Must be reachable by the Portal and AllKnower, and optionally exposed if you want players to access shared wikis directly.
+
+---
+
+## Data persistence and storage layout
+
+AllCodex persists data in three locations. In our Docker Compose configuration, these are consolidated under the `/srv/allcodex/` directory on the host:
+
+```text
+/srv/allcodex/
+├── core-data/                # SQLite databases & configurations for Core
+│   ├── document-backups/     # Scheduled note backups
+│   ├── my-database.db        # The primary SQLite database file
+│   └── config.json           # User options and editor themes
+│
+└── knower-data/              # AllKnower databases
+    └── lancedb/              # On-disk Vector embeddings database
+```
+
+<Warning>
+  Back up `/srv/allcodex` to prevent losing the lore database, templates, user profiles, and vector indexes if the folder is deleted.
+</Warning>

@@ -1,0 +1,112 @@
+/* Custom CSS overrides to increase typography sizing and apply Grimoire theme colors */
+
+/* ── Typography Families & Sizes ── */
+body, p, li, td, th {
+  font-family: 'Crimson Text', Georgia, serif !important;
+  font-size: 1.0625rem !important; /* ~17px */
+  line-height: 1.8 !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Cinzel', Georgia, serif !important;
+  letter-spacing: 0.03em !important;
+}
+
+h1 { font-size: 2.25rem !important; }
+h2 { font-size: 1.6rem !important; }
+h3 { font-size: 1.3rem !important; }
+
+/* ── Light Theme Colors (parchment, ink, gold, deep teal) ── */
+body {
+  background-color: #f5f2eb !important;
+  color: #201d24 !important;
+}
+
+.prose {
+  color: #201d24 !important;
+}
+
+/* Sidebar navigation in light mode */
+nav, .sidebar {
+  background-color: #fcfbfa !important;
+  border-right: 1px solid #dedad2 !important;
+}
+
+nav a, .sidebar a {
+  font-size: 0.95rem !important;
+  color: #555048 !important;
+}
+
+nav a:hover, .sidebar a:hover, nav a.active, .sidebar a.active {
+  color: #b17200 !important;
+  background-color: #f6f4ee !important;
+}
+
+/* Links in light mode */
+.prose a {
+  color: #00827e !important;
+  text-decoration-line: underline !important;
+}
+
+.prose a:hover {
+  color: #b17200 !important;
+}
+
+/* Code blocks in light mode */
+code, pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 0.925rem !important;
+  background-color: #fcfbfa !important;
+  border-color: #dedad2 !important;
+}
+
+/* ── Dark Theme Colors (void-dark background, neon amber, electric violet, spectral teal) ── */
+.dark body {
+  background-color: #0e0d12 !important;
+  color: #f5f3ef !important;
+}
+
+.dark .prose {
+  color: #f5f3ef !important;
+}
+
+/* Headings in dark mode */
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: #ffaa00 !important; /* Neon Amber primary headings */
+}
+
+/* Sidebar navigation in dark mode */
+.dark nav, .dark .sidebar {
+  background-color: #0f0c15 !important; /* Dark violet-black */
+  border-right: 1px solid #4a3a60 !important;
+}
+
+.dark nav a, .dark .sidebar a {
+  color: #a8a0b0 !important;
+}
+
+.dark nav a:hover, .dark .sidebar a:hover, .dark nav a.active, .dark .sidebar a.active {
+  color: #ffaa00 !important;
+  background-color: #27173e !important; /* Electric violet selection background */
+}
+
+/* Links in dark mode */
+.dark .prose a {
+  color: #00e5db !important; /* Spectral Teal links */
+}
+
+.dark .prose a:hover {
+  color: #ffaa00 !important;
+}
+
+/* Borders in dark mode */
+.dark border, .dark .border-border, .dark hr, .dark td, .dark th {
+  border-color: #4a3a60 !important;
+}
+
+/* Code blocks in dark mode */
+.dark code, .dark pre {
+  background-color: #12101a !important;
+  border: 1px solid #4a3a60 !important;
+  color: #e6e0f0 !important;
+}

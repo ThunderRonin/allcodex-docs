@@ -1,0 +1,117 @@
+---
+title: "Changelog"
+description: "Product updates and improvements"
+---
+
+<Update label="June 11, 2026">
+
+## New features
+
+**Public sharing portal**
+
+The Portal now ships a dedicated public surface for sharing lore with players and readers. Visitors can browse published entries and open rich detail pages with portraits, theme songs, attributes, and resolved relations—all without signing in. See [Sharing lore with players](/guides/sharing-lore) for setup.
+
+**Public search**
+
+Readers on the public portal can now search across published lore from the landing page. Results are scoped to the share tree, so only intentionally published content is discoverable.
+
+**Public image serving**
+
+Portraits and other images attached to shared lore now load on public pages through a dedicated image endpoint, so shared entries render with full visuals for unauthenticated visitors.
+
+## Updates
+
+**Shared content browser**
+
+The Portal's shared content view now has clearer **Published**, **Draft**, and **GM-only** filters, inline quick-toggle controls, and a search box. Audit what's live and flip publish state without leaving the page.
+
+**Share settings panel**
+
+The per-entry share panel now surfaces the computed share URL, a custom alias slug, and optional password protection in a single card, so configuring how a lore entry is published is a one-stop action.
+
+**Refreshed branding**
+
+The Portal, landing page, and favicon now use the new grimoire logo, replacing the previous generic scroll icon across navigation, sidebar, and browser tabs.
+
+</Update>
+
+<Update label="June 6, 2026">
+
+## New features
+
+**Public lore pages**
+
+Published lore now has its own public, read-only pages and endpoints that anyone can view without signing in. Share a link and visitors can read the entry directly—no account required.
+
+**Owner login**
+
+The Portal now has a dedicated owner login page that gates access to private dashboards, settings, and shared views. Unauthenticated visitors are redirected to login for private surfaces and see published lore and the login page only.
+
+**Publication status in the share tree**
+
+The share tree now shows explicit **Published** and **Not Shared** indicators, making it clear which entries are live and which are private.
+
+## Updates
+
+**Single-owner Portal**
+
+We removed self-service sign-up and registration from the Portal and Settings pages. Login requires an existing AllKnower owner session before authentication cookies are issued. Private APIs return `401` for requests without owner credentials.
+
+**AllKnower owner gate**
+
+AllKnower enforces a single-owner gate, aligning its authentication model with the Portal.
+
+**Simpler portal middleware**
+
+We simplified access control for portal routes, simplifying redirects between public lore, login, and private pages.
+
+## Fixes
+
+- Share links point directly to the destination URL instead of a constructed path, landing visitors on the correct page.
+- The system bounds and rounds third-party model pricing from OpenRouter before storage. This resolves an issue that caused pricing updates to fail for some models.
+
+</Update>
+
+<Update label="June 3, 2026">
+
+## New features
+
+**Relationship graph**
+
+The Portal relationship view renders with React Flow instead of Mermaid, providing pan-and-zoom, cleaner layouts, and consistent relation colors across the app.
+
+**Push notifications**
+
+Subscribe to push notifications from the Portal to receive alerts when AI jobs, suggestions, and shared updates finish. A notification bell is now in the top navigation.
+
+**Streaming AI responses**
+
+AI responses stream token-by-token in brain dump and entity views, displaying results during generation instead of waiting for the full response.
+
+**Auto-relate on brain dump**
+
+When you save a brain dump, the system proposes relationships to existing entities. Suggestions are cached by content hash and deduplicated in flight, making repeat queries faster.
+
+## Updates
+
+**Hybrid search**
+
+Search blends keyword and vector results using Reciprocal Rank Fusion, surfacing relevant matches for paraphrased or conceptual queries.
+
+**Relation suggestions cache**
+
+The system caches and invalidates suggestion responses by content hash, with inflight deduplication. This increases suggestion speed and reduces latency.
+
+**AllCodex Core clarified as server-only**
+
+Documentation updates clarify that AllCodex Core is a server-only fork (no desktop client), runs on Node 22, and ships as a fixed set of packages.
+
+## Fixes
+
+- Fixed relation color sync between AllKnower and the Portal so colors stay consistent across views.
+- Fixed a streaming entity parsing issue and tightened Zod null coercion to prevent intermittent parse errors.
+- Fixed statblock rendering glitches in entity views.
+- Scoped Phase 5 graph queries by `userId` to prevent cross-tenant data exposure.
+- Tightened rate limiter scoping and hardened integration tests.
+
+</Update>

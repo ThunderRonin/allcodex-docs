@@ -1,0 +1,137 @@
+---
+title: "Quickstart"
+description: "Launch your AllCodex grimoire and run your first AI brain dump in minutes."
+---
+
+AllCodex can be launched either via **Docker Compose** (recommended for self-hosting) or **Local Development** (recommended for developers).
+
+---
+
+## Method 1: Docker Compose (self-hosting)
+
+This is the fastest path to running the full AllCodex ecosystem.
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) installed.
+- An [OpenRouter API Key](https://openrouter.ai/) (required by AllKnower for AI features).
+
+### 1. Download the Docker Compose file
+
+Create a directory for AllCodex and download `docker-compose.yml`:
+
+```bash
+mkdir allcodex-grimoire && cd allcodex-grimoire
+curl -sSL https://raw.githubusercontent.com/ThunderRonin/allcodex-aio/main/docker-compose.yml -o docker-compose.yml
+```
+
+### 2. Configure environment variables
+
+Create the env directories and configuration files:
+
+```bash
+sudo mkdir -p /etc/allcodex
+sudo touch /etc/allcodex/core.env /etc/allcodex/allknower.env /etc/allcodex/portal.env
+```
+
+Add your `OPENROUTER_API_KEY` to `/etc/allcodex/allknower.env`:
+```env
+OPENROUTER_API_KEY=your_api_key_here
+```
+
+### 3. Launch the stack
+
+Run the compose file in detached mode:
+
+```bash
+docker compose up -d
+```
+
+---
+
+## Method 2: Local development (mprocs)
+
+Use this method if you want to run the codebase from source or contribute to AllCodex.
+
+### Prerequisites
+
+- **Node.js v22.x** (AllCodex Core requires Node v22; Node v26 is not supported due to native DB bindings).
+- **Bun** (required by AllKnower and Portal).
+- **pnpm v10+** (required by Core).
+- **PostgreSQL** running on your local machine.
+- **mprocs** (`npm install -g mprocs` or `brew install mprocs`) to orchestrate the services.
+
+### 1. Clone the repository (with submodules)
+
+Ensure you pull all submodules during cloning:
+
+```bash
+git clone --recurse-submodules https://github.com/ThunderRonin/allcodex-aio.git
+cd allcodex-aio
+```
+
+### 2. Install dependencies and build
+
+```bash
+# Install root package & setup submodules
+pnpm install
+```
+
+### 3. Set up AllKnower env
+
+Copy `.env.example` in `allknower` to `.env` and fill in your PostgreSQL URL and OpenRouter key:
+
+```bash
+cd allknower
+cp .env.example .env
+# Edit .env with your favorite editor
+bun db:generate && bun db:migrate
+cd ..
+```
+
+### 4. Run all services with mprocs
+
+From the repository root directory, run:
+
+```bash
+mprocs
+```
+
+This launches:
+- **AllCodex Portal** on [http://localhost:3000](http://localhost:3000)
+- **AllKnower** on [http://localhost:3001](http://localhost:3001)
+- **AllCodex Core** on [http://localhost:8080](http://localhost:8080)
+
+---
+
+## Zero-login auto-provisioning
+
+On your very first run, AllCodex performs an automatic boot-chain:
+1. **Core** sets its admin password from environment configurations.
+2. **AllKnower** registers a default owner account, obtains an ETAPI security token from Core, and encrypts it at rest.
+3. **Portal** intercepts your first visit, retrieves the owner session, and logs you in.
+
+Open your browser to [http://localhost:3000](http://localhost:3000) to begin writing.
+
+---
+
+## Your first brain dump
+
+Once in the Portal, follow these steps to see the AI in action:
+
+<Steps>
+  <Step title="Write or paste raw text">
+    Click the **Brain Dump** tab in the Portal. Paste a rough description of an NPC, location, or historical event.
+    *Example:*
+    > "Lord Michael Ashvane is an aging paladin of the Dawn Shield faction. He guards Blackstone Keep in the eastern marches of Solara."
+  </Step>
+  <Step title="Process the dump">
+    Click **Submit**. The AI streams entities (such as *Lord Michael Ashvane*, *Dawn Shield*, *Blackstone Keep*, *Solara*) on screen.
+  </Step>
+  <Step title="Apply the lore">
+    Click **Apply to Database**. The AI creates separate notes for each entity in AllCodex Core, links them to templates, and attaches canonical attributes (like `#loreType = "character"` and `affiliation = "Dawn Shield"`).
+  </Step>
+  <Step title="View the graph">
+    Go to the **Relationship Graph** tab. The interactive React Flow canvas displays the new entities and their connections.
+  </Step>
+</Steps>

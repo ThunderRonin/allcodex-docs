@@ -1,0 +1,54 @@
+---
+title: "Sharing Lore with Players"
+description: "How to publish public, player-safe wikis from your grimoire."
+---
+
+AllCodex includes a share rendering engine. You can publish a folder or branch of your lore tree as a public, read-only website for your players. Secret GM notes and draft content stay completely hidden.
+
+---
+
+## Setting up a share subtree
+
+To publish a section of your grimoire:
+
+1. **Tag the share root**: Go to the note or folder you want to share and attach the label `#shareRoot`.
+2. **Access the URL**: The share will be served at `http://your-core-ip:8080/share/noteId` (or via custom slugs).
+
+---
+
+## Share configuration labels
+
+You can fine-tune how shared trees behave by adding these canonical labels to your notes:
+
+| Label | Value | Description |
+| :--- | :--- | :--- |
+| **`#shareRoot`** | (none) | Designates the selected note and all of its sub-notes as a public share. |
+| **`#shareAlias`** | `slug-string` | Creates a custom, human-readable URL slug (e.g. `#shareAlias = "blackstone"` serves the note at `/share/blackstone`). |
+| **`#shareCredentials`** | `user:password` | Sets Basic HTTP Authentication. Visitors must enter this username and password to view the share. |
+| **`#shareIndex`** | (none) | Marks the selected note as the default home/landing page of the share. |
+| **`#shareHiddenFromTree`**| (none) | Keeps the note accessible via direct link, but hides it from the sidebar navigation tree. |
+| **`#shareDisallowRobotIndexing`** | (none) | Injects `noindex` headers to prevent Google and search engines from indexing your campaign wiki. |
+
+---
+
+## Hiding secret GM content
+
+Mix player-safe lore and GM secrets in the same notes using two gating mechanisms:
+
+### Note-level gates
+* **`#draft` tag**: Notes with this tag are hidden from public share navigation, even when placed inside a shared folder.
+* **`#gmOnly` tag**: Notes with this tag return a `404 Not Found` error to public visitors, keeping secrets secure.
+
+### Section-level gates (HTML classes)
+Gate individual paragraphs, lists, or tables to show general descriptions while hiding specific spoilers:
+* Wrap secrets in a container with the CSS class **`.gm-only`**.
+* The Core share renderer parses note HTML at output time and **strips elements containing the `.gm-only` class** before sending the page to public visitors.
+
+```html
+<p>Commander Vane is a legendary general.</p>
+
+<!-- This block is stripped from player views: -->
+<div class="gm-only">
+  <p><strong>GM Spoiler:</strong> Vane is secretly a vampire lord working for the Lich.</p>
+</div>
+```

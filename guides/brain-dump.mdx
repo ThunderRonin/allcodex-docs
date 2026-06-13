@@ -1,0 +1,51 @@
+---
+title: "AI Brain Dump"
+description: "How to convert raw notes, session recaps, and ideas into structured lore."
+---
+
+The **Brain Dump** is the central ingestion pipeline of AllCodex. Dump raw thoughts or TTRPG session recaps, and the AI builds your wiki by creating notes, linking templates, and writing attributes.
+
+---
+
+## Processing modes
+
+Choose from three processing modes when submitting a brain dump:
+
+| Mode | Behavior | Best used for |
+| :--- | :--- | :--- |
+| **Auto** | The AI processes the dump, extracts entities, resolves duplicates, and commits them to your database. | Quick updates or small notes. |
+| **Review** | The AI extracts the entities and presents them as interactive draft cards in the Portal. You can rename them, edit their attributes, delete incorrect extras, and manually choose when to commit. | Dense session recaps, complex lore, or when importing many new entities at once. |
+| **Inbox** | The AI places the entire dump as a single raw note into your AllCodex Core "Inbox" folder without running LLM extraction. | Dumps that do not require immediate API token use. |
+
+---
+
+## The streaming pipeline (SSE)
+
+When processing in **Auto** or **Review** mode, AllKnower opens a Server-Sent Events (SSE) stream to the Portal:
+1. **Live stream**: The dashboard renders the AI's step-by-step reasoning and a stream of extracted entities (with titles and types) in real time.
+2. **Observability**: The stream prints live token counts, processing latency, and estimated OpenRouter cost.
+3. **No timeout**: The SSE pipeline uses active `: keepalive` comments to prevent browser timeouts during long inference runs, which can take up to a minute.
+
+---
+
+## Bulk batch processing
+
+If you have a backlog of text files (e.g. dozens of campaign session recaps or old worldbuilding docs), you can use the **Bulk Brain Dump** feature:
+
+1. **Queueing**: Submit multiple text documents at the same time. The Portal sends them to AllKnower's background worker, which queues them in the `brain_dump_jobs` table.
+2. **Background execution**: The system executes jobs sequentially. Monitor progress, pause, or cancel queued dumps from the settings page.
+3. **Notifications**: Enable push notifications in the Portal to receive alerts on your desktop or phone when a batch job completes.
+
+---
+
+## Best practices for writing dumps
+
+To improve extraction accuracy:
+
+* **Mention relations explicitly**: Write how things connect. 
+  * *Good*: *"Sir Roderick is a member of the Silver Gauntlet. He reports directly to Commander Vane."*
+  * *Bad*: *"Sir Roderick works with Vane at the Silver Gauntlet."*
+* **Provide context for ambiguous names**: If a word is a place, spell out that it is a location.
+  * *Good*: *"The party traveled to Eldoria, a coastal trade town..."*
+  * *Bad*: *"The party traveled to Eldoria..."*
+* **Keep core terminology consistent**: Try not to refer to the same group or location by multiple names in the same dump unless you explicitly state they are aliases.

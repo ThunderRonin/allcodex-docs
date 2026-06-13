@@ -1,4 +1,4 @@
-# Canonical Lore Schema — AllCodex Ecosystem
+# Canonical Lore Schema: AllCodex Ecosystem
 
 Single source of truth for all label, attribute, and relation conventions across AllCodex Core, AllKnower, and AllCodex Portal.
 
@@ -139,7 +139,7 @@ All lore types are expressed via the `#loreType` label on a note.
 
 ## Relation Types
 
-AllKnower's auto-relate / apply pipeline emits a fixed set of 17 canonical relationship types (`RelationshipTypeSchema` in `allknower/src/types/lore.ts`). Each is mapped to a Core relation (`~`) attribute name via `RELATIONSHIP_TYPE_TO_CORE_NAME` in `allknower/src/relationships/mapping.ts` — the canonical token is capitalized and prefixed with `rel` (e.g. `member_of` → `~relMemberOf`). Unknown types are **rejected** (no generic `relOther` fallback). Relations are written bidirectionally by default, with the human-readable description stored as a `#relationNote` label on each side.
+AllKnower's auto-relate / apply pipeline emits a fixed set of 17 canonical relationship types (`RelationshipTypeSchema` in `allknower/src/types/lore.ts`). Each is mapped to a Core relation (`~`) attribute name via `RELATIONSHIP_TYPE_TO_CORE_NAME` in `allknower/src/relationships/mapping.ts`. The canonical token is capitalized and prefixed with `rel` (e.g. `member_of` → `~relMemberOf`). Unknown types are **rejected** (no generic `relOther` fallback). Relations are written in both directions by default, with the human-readable description stored as a `#relationNote` label on each side.
 
 | Canonical type | Core relation name |
 |---|---|

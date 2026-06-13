@@ -1,0 +1,61 @@
+---
+title: "Upgrading AllCodex"
+description: "How to keep your self-hosted AllCodex stack updated and migrate data safely."
+---
+
+AllCodex updates include bug fixes, new features, and optimized LLM prompts. Upgrading the self-hosted stack takes three steps.
+
+---
+
+## Standard Docker upgrade
+
+AllCodex persists campaign lore, SQLite files, and vector indices in `/srv/allcodex` on your host machine. This allows you to update containers without data loss.
+
+### 1. Pull the latest images
+Pull the updated container tags from GitHub Packages:
+
+```bash
+docker compose pull
+```
+
+### 2. Recreate the containers
+Recreate and start the services. Docker replaces containers that have new images:
+
+```bash
+docker compose up -d
+```
+
+### 3. Clean up old images
+Remove old, dangling Docker images to free up disk space:
+
+```bash
+docker image prune -f
+```
+
+---
+
+## Upgrading database schema and migrations
+
+### AllCodex Core (SQLite)
+Core applies schema migrations on startup. The Express server checks the SQLite schema, runs pending SQL scripts, and updates the database.
+
+### AllKnower (PostgreSQL)
+If you run AllKnower via Docker, the container entrypoint runs schema migrations (`prisma migrate deploy`) before launching the web server.
+
+If you run a **local development** setup (Method 2), apply Prisma migrations after checking out the latest code:
+
+```bash
+cd allknower
+bun db:migrate
+```
+
+---
+
+## Re-indexing vector embeddings (RAG)
+
+If a new AllCodex release changes embedding models or the RAG schema (such as updating Qwen embeddings), re-index your LanceDB vector database:
+
+1. Open the **Portal Settings** tab.
+2. Under the **AI & Search Status** card, look for the **Reindex RAG** section.
+3. Click **Reindex All Lore** to queue a background job. AllKnower reads all notes tagged with `#lore`, regenerates embeddings, and rebuilds the vector database.
+4. Alternatively, click **Wipe DB Lore & RAG** to wipe the LanceDB and Prisma metadata backends.

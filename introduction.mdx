@@ -1,0 +1,84 @@
+---
+title: "Introduction"
+description: "Welcome to AllCodex, the AI-powered TTRPG worldbuilding grimoire."
+---
+
+AllCodex is a three-service worldbuilding platform designed for Dungeon Masters, writers, and worldbuilders. It functions as an interactive "grimoire" where you can dump raw lore and thoughts, and let AI process, structure, and connect the elements.
+
+```
+                  ┌────────────────────────────────────────┐
+                  │       AllCodex Portal (Next.js)        │
+                  │             Web Frontend               │
+                  └───────────┬────────────────┬───────────┘
+                              │                │
+                              ▼                ▼
+     ┌───────────────────────────────┐  ┌───────────────────────────────┐
+     │      AllKnower (Bun/Elysia)   │  │   AllCodex Core (Express)     │
+     │      AI Orchestrator & RAG    │  │   Lore Database (Trilium)     │
+     └───────────────┬───────────────┘  └───────────────────────────────┘
+                     │                          ▲
+                     └──────────────────────────┘
+                              (via ETAPI)
+```
+
+## The three services
+
+AllCodex is split into three decoupled components, keeping your lore storage, AI logic, and user interface separate:
+
+<CardGroup cols={3}>
+  <Card title="AllCodex Portal" icon="browser" href="/concepts/architecture">
+    A sleek, grimoire-themed web interface built in Next.js 16 and React 19. It serves as your control center.
+  </Card>
+  <Card title="AllKnower" icon="brain" href="/concepts/architecture">
+    The AI brain. Built on Elysia and Bun, it coordinates LLMs, handles vector embeddings, and processes relations.
+  </Card>
+  <Card title="AllCodex Core" icon="database" href="/concepts/everything-is-a-note">
+    The storage engine. A customized, headless fork of Trilium, serving as a highly flexible hierarchical lore database.
+  </Card>
+</CardGroup>
+
+---
+
+## Core capabilities
+
+Discover how AllCodex transforms raw, unstructured worldbuilding notes into a dense, navigable wiki.
+
+<CardGroup cols={2}>
+  <Card title="Brain Dump Pipeline" icon="file-arrow-up" href="/guides/brain-dump">
+    Dump raw thoughts, campaign sessions, or messy notes. AllKnower streams the content to LLMs, extracts clean lore entities, and seeds them into your database.
+  </Card>
+  <Card title="AI Consistency & Gap Tools" icon="wand-sparkles" href="/guides/ai-tools">
+    Run automated analyses to detect logical gaps in your world, find contradictions, and suggest deep entity relationships.
+  </Card>
+  <Card title="Visual Relationship Graph" icon="chart-network" href="/guides/relationship-graph">
+    Explore your world through an interactive React Flow canvas. Filter relationships, traverse multi-hop connections, and see how your NPCs, factions, and locations connect.
+  </Card>
+  <Card title="RAG & Hybrid Search" icon="magnifying-glass" href="/guides/hybrid-search">
+    Retrieve lore. Fuses vector search (via LanceDB) with SQLite full-text search (BM25) to understand both literal keywords and conceptual queries.
+  </Card>
+  <Card title="Public Share Pages" icon="share-nodes" href="/guides/sharing-lore">
+    Publish branches of your lore tree. AllCodex Core generates lightweight, read-only public pages for players, respecting GM-only content gates.
+  </Card>
+  <Card title="Token & Budget Observability" icon="coins" href="/guides/token-observability">
+    Track model costs, background jobs, and API calls with granular usage dashboards and customizable cost buffers.
+  </Card>
+</CardGroup>
+
+---
+
+## Quick navigation
+
+Ready to get started? Follow the paths below:
+
+<Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+  Run the entire ecosystem in 2 minutes using Docker Compose, and execute your first lore brain dump.
+</Card>
+
+---
+
+## Credits and acknowledgments
+
+AllCodex Core is built on top of the excellent foundation of **[Trilium Notes](https://github.com/zadam/trilium)**, originally created by **[zadam](https://github.com/zadam)** and maintained by the **[TriliumNext](https://github.com/TriliumNext/TriliumNext)** community. 
+
+Trilium Notes is a powerful hierarchical note-taking application. We adapted its flexible node-branch data model and REST API (ETAPI) to run as a headless backend database engine for the AllCodex ecosystem. We are deeply grateful to zadam and the Trilium/TriliumNext contributors for creating such a robust, extensible note database.
+
