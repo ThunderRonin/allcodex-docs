@@ -3,6 +3,26 @@ title: "Changelog"
 description: "Product updates and improvements"
 ---
 
+<Update label="June 13, 2026">
+
+## New features
+
+**Local model support**
+
+AllKnower can now route LLM and embedding calls to local providers such as Ollama and LM Studio alongside OpenRouter. Use the `local/` or `ollama/` prefix on any task model to point it at your local endpoint, configured via `LOCAL_PROVIDER_BASE_URL` and `LOCAL_PROVIDER_API_KEY`. See [Configuration](/self-hosting/configuration) for setup.
+
+## Updates
+
+**Cloud fallbacks for local models**
+
+When a local model call fails, AllKnower automatically falls back to the configured cloud fallbacks for that task, so brain dump, autocomplete, and other AI features stay reliable even when your local server is offline. Configure fallbacks per task with `*_FALLBACK_1`, `_2`, and `_3`.
+
+**Cleaner local requests**
+
+Requests to local endpoints now strip OpenRouter-specific parameters that local providers don't understand, improving compatibility with Ollama, LM Studio, and other OpenAI-compatible servers.
+
+</Update>
+
 <Update label="June 11, 2026">
 
 ## New features
