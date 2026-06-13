@@ -34,6 +34,8 @@ These variables configure database models, connections, OpenRouter keys, and mod
 | `LANCE_DB_PATH` | `/srv/allcodex/knower-data/lancedb` | Directory where LanceDB vector and FTS tables are persisted. |
 | `OPENROUTER_API_KEY`| (none) | Your OpenRouter API Key. |
 | `OPENROUTER_BASE_URL`| `https://openrouter.ai/api/v1` | Custom OpenRouter API base endpoint. |
+| `LOCAL_PROVIDER_BASE_URL`| `http://localhost:11434/v1` | OpenAI-compatible base URL for a local model server (Ollama, LM Studio, etc.). |
+| `LOCAL_PROVIDER_API_KEY`| `ollama` | API key for the local provider. Most local servers accept any non-empty value. |
 | `PORTAL_INTERNAL_SECRET`| (none) | A secure, random token shared with the Portal to verify auto-provisioning. |
 | `BETTER_AUTH_SECRET` | (none) | Secret used by better-auth to sign cookies and tokens. Must be $\ge 16$ characters in production. |
 | `BETTER_AUTH_URL` | `http://localhost:3001` | The canonical URL of the AllKnower auth server. |
@@ -63,6 +65,31 @@ Override the default models for specific tasks. Each task supports a primary mod
 
 * **Fallback syntax**: Append `_FALLBACK_1`, `_FALLBACK_2`, or `_FALLBACK_3` to any model key (e.g. `BRAIN_DUMP_MODEL_FALLBACK_1=google/gemini-2.5-pro`).
 * **Auto route**: Set `USE_OPENROUTER_AUTO=true` to let OpenRouter automatically select the best model for all tasks.
+
+### Local models (Ollama, LM Studio)
+
+AllKnower can route any model task — including embeddings — to a local OpenAI-compatible server such as [Ollama](https://ollama.com) or [LM Studio](https://lmstudio.ai). Use this to run lore-sensitive workloads on your own hardware, develop offline, or cut OpenRouter spend.
+
+Point AllKnower at your local server with `LOCAL_PROVIDER_BASE_URL` and `LOCAL_PROVIDER_API_KEY`, then prefix any model ID with `ollama/` or `local/` to route that task locally. Unprefixed model IDs continue to use OpenRouter.
+
+```bash .env
+# Local server
+LOCAL_PROVIDER_BASE_URL=http://localhost:11434/v1
+LOCAL_PROVIDER_API_KEY=ollama
+
+# Run brain dump on a local model, fall back to OpenRouter if it fails
+BRAIN_DUMP_MODEL=ollama/llama3.1:70b
+BRAIN_DUMP_FALLBACK_1=deepseek/deepseek-v4-pro
+
+# Generate embeddings locally
+EMBEDDING_CLOUD=ollama/nomic-embed-text
+```
+
+Mix local and cloud models freely within a fallback chain. AllKnower detects the prefix per model, strips it before calling your local server, and prunes OpenRouter-specific parameters (provider routing, reasoning effort, trace headers) so the local endpoint receives a clean OpenAI-compatible request. If a local model errors or times out, the next entry in the chain is tried — even when that entry is a cloud model.
+
+<Warning>
+Switching `EMBEDDING_CLOUD` to a model with different output dimensions requires dropping the LanceDB table and running a full reindex via `POST /rag/reindex`. The vector schema is fixed at table creation.
+</Warning>
 
 ---
 

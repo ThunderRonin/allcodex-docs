@@ -3,6 +3,16 @@ title: "Changelog"
 description: "Product updates and improvements"
 ---
 
+<Update label="June 13, 2026">
+
+## New features
+
+**Local model providers**
+
+AllKnower now routes any LLM or embedding task to a local OpenAI-compatible server (Ollama, LM Studio, and similar) when the model ID is prefixed with `ollama/` or `local/`. Configure your server with `LOCAL_PROVIDER_BASE_URL` and `LOCAL_PROVIDER_API_KEY`, then mix local and OpenRouter entries in the same fallback chain — if a local model fails, the next entry is tried, even when that entry is a cloud model. See [Configuration reference](/self-hosting/configuration) for setup.
+
+</Update>
+
 <Update label="June 11, 2026">
 
 ## New features
