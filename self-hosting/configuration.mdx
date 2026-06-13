@@ -64,6 +64,33 @@ Override the default models for specific tasks. Each task supports a primary mod
 * **Fallback syntax**: Append `_FALLBACK_1`, `_FALLBACK_2`, or `_FALLBACK_3` to any model key (e.g. `BRAIN_DUMP_MODEL_FALLBACK_1=google/gemini-2.5-pro`).
 * **Auto route**: Set `USE_OPENROUTER_AUTO=true` to let OpenRouter automatically select the best model for all tasks.
 
+### Local model providers
+
+AllKnower can route any LLM or embedding task to a local OpenAI-compatible server such as [Ollama](https://ollama.com/), [LM Studio](https://lmstudio.ai/), or vLLM. This lets you run AllCodex fully offline or mix local and cloud models in the same fallback chain.
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `LOCAL_PROVIDER_BASE_URL` | `http://localhost:11434/v1` | OpenAI-compatible base URL for your local provider. Defaults to Ollama. |
+| `LOCAL_PROVIDER_API_KEY` | `ollama` | API key sent to the local provider. Most local servers ignore the value but require the field. |
+
+To send a task to your local provider, prefix the model name with `ollama/` or `local/`. AllKnower strips the prefix before calling the local server and automatically removes OpenRouter-only fields (`models`, `plugins`, `provider`) so requests stay compatible.
+
+Local models participate in the same fallback chain as cloud models. You can lead with a local model and fall back to a cloud model when the local server is offline, or the reverse.
+
+```env
+# Run brain dump locally, fall back to OpenRouter if Ollama is down
+BRAIN_DUMP_MODEL=ollama/llama3
+BRAIN_DUMP_FALLBACK_1=deepseek/deepseek-v4-pro
+
+# Embed locally with nomic-embed-text (768 dimensions)
+EMBEDDING_CLOUD=ollama/nomic-embed-text
+EMBEDDING_DIMENSIONS=768
+```
+
+<Warning>
+The LanceDB vector table is created with a fixed dimension. If you change `EMBEDDING_CLOUD` to a model with a different output size (for example switching from a 1024-dim cloud model to a 768-dim local model), set `EMBEDDING_DIMENSIONS` to match, delete the existing LanceDB table, and run `POST /rag/reindex` to rebuild it.
+</Warning>
+
 ---
 
 ## AllCodex Portal (frontend)
