@@ -893,13 +893,14 @@ Original build sequence completed:
 
 ## What Was Built (Advanced Features & Observability) ✅
 
-Six recommended feature streams fully implemented and shipped:
+Seven recommended feature streams fully implemented and shipped:
 - **Token Observability Dashboard**: usage page, burn charts, cost metrics, and nightly pricing aggregator.
 - **Streaming Entity Rendering**: progressive JSON parsing and card display for instant feedback.
 - **Hybrid Search**: FTS keyword search + vector retrieval combined via Reciprocal Rank Fusion (RRF) and OpenRouter Cohere rerank, with env tuning knobs.
 - **Bulk Brain Dump**: Postgres-backed job queue with single-flight worker and bulk upload page.
 - **Lore Diff & History**: revision history tracking with before/after comparisons.
 - **Push Notifications**: web-push/VAPID push notifications with in-app toast integration.
+- **Local Models Integration**: Full support for local LLM and embedding models (Ollama, LM Studio, vLLM) across all 8 LLM pipelines and embedding generation, with client-side fallback/hybrid routing to OpenRouter cloud models.
 
 ## What To Build Next
 
