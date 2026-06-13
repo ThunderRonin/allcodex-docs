@@ -70,7 +70,7 @@ Override the default models for specific tasks. Each task supports a primary mod
 
 AllKnower can route any model task — including embeddings — to a local OpenAI-compatible server such as [Ollama](https://ollama.com) or [LM Studio](https://lmstudio.ai). Use this to run lore-sensitive workloads on your own hardware, develop offline, or cut OpenRouter spend.
 
-Point AllKnower at your local server with `LOCAL_PROVIDER_BASE_URL` and `LOCAL_PROVIDER_API_KEY`, then prefix any model ID with `ollama/` or `local/` to route that task locally. Unprefixed model IDs continue to use OpenRouter.
+Point AllKnower at your local server with `LOCAL_PROVIDER_BASE_URL` and `LOCAL_PROVIDER_API_KEY`. Then prefix any model ID with `ollama/` or `local/` to route that task locally. Unprefixed model IDs continue to use OpenRouter.
 
 ```bash .env
 # Local server
@@ -85,7 +85,7 @@ BRAIN_DUMP_FALLBACK_1=deepseek/deepseek-v4-pro
 EMBEDDING_CLOUD=ollama/nomic-embed-text
 ```
 
-Mix local and cloud models freely within a fallback chain. AllKnower detects the prefix per model, strips it before calling your local server, and prunes OpenRouter-specific parameters (provider routing, reasoning effort, trace headers) so the local endpoint receives a clean OpenAI-compatible request. If a local model errors or times out, the next entry in the chain is tried — even when that entry is a cloud model.
+Mix local and cloud models freely within a fallback chain. AllKnower detects the prefix per model and strips it before calling your local server. It also prunes OpenRouter-specific parameters (provider routing, reasoning effort, trace headers) so the local endpoint receives a clean OpenAI-compatible request. If a local model errors or times out, AllKnower tries the next entry in the chain — even when that entry is a cloud model.
 
 <Warning>
 Switching `EMBEDDING_CLOUD` to a model with different output dimensions requires dropping the LanceDB table and running a full reindex via `POST /rag/reindex`. The vector schema is fixed at table creation.
