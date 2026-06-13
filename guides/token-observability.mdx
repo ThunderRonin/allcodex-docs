@@ -1,0 +1,45 @@
+---
+title: "Token & Cost Observability"
+description: "How to monitor LLM usage, set budgets, and manage OpenRouter costs."
+---
+
+Calling external LLM APIs incurs costs. AllCodex includes **token and budget observability dashboards** to monitor spending and enforce daily limits.
+
+---
+
+## The observability dashboard
+
+The **Observability** and **Settings** pages in the Portal display:
+
+* **Daily burn rate**: A chart showing your API cost over the last 30 days.
+* **Task breakdown**: Cost split by operation type (such as Brain Dumps, Consistency Checks, and Relationship Suggestions).
+* **Model breakdown**: The cost split by model (e.g. Grok-4 vs Kimi-k2.5).
+* **Token counts**: Split by prompt (input) and completion (output) tokens.
+
+---
+
+## Budgets and hard limits
+
+To protect self-hosters from runaway loops or excessive usage, AllCodex supports user-scoped budgets:
+
+1. **Daily warning threshold**: Triggers a warning badge in the Portal navigation bar when daily spending crosses this amount (e.g. $1.00/day).
+2. **Hard daily budget**: Blocks subsequent AI calls for the remainder of the day once reached (e.g. $2.00/day). AllKnower returns a `403 Forbidden` error.
+3. **Defaults**: Standard budget defaults to a conservative $0.50/day.
+
+---
+
+## Database tracking schema
+
+Three tables track observability metrics in AllKnower's PostgreSQL database:
+
+### `llm_call_log`
+Logs every API request sent to OpenRouter.
+* Fields: `id`, `userId`, `taskType` (e.g. `brain_dump`), `model`, `promptTokens`, `completionTokens`, `cost`, `timestamp`.
+
+### `model_pricing`
+Maintains a cache of OpenRouter model prices (input cost per 1M tokens, output cost per 1M tokens) to calculate transaction costs locally.
+* AllKnower pulls fresh pricing from OpenRouter via `POST /usage/refresh-pricing` during non-production updates.
+
+### `user_budgets`
+Stores the warning and limit thresholds for each user.
+* Fields: `id`, `userId`, `dailyWarningLimit`, `dailyHardLimit`.

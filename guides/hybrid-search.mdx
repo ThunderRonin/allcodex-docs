@@ -1,0 +1,61 @@
+---
+title: "RAG & Hybrid Search"
+description: "How AllCodex fuses semantic vector search with keyword retrieval for smart search queries."
+---
+
+AllCodex uses a **hybrid search engine** that fuses semantic vector search with keyword retrieval.
+
+---
+
+## The search pipeline
+
+When you search for something in the Portal or when the AI retrieves lore context, AllKnower executes a four-stage search pipeline:
+
+```
+  Search Query (e.g., "dwarf king weapon")
+             │
+      ┌──────┴──────────────────────┐
+      ▼                             ▼
+  Vector Search (LanceDB)       FTS Search (SQLite BM25)
+  Computes semantic matches    Finds literal text matches
+      │                             │
+      └──────┬──────────────────────┘
+             ▼
+  Reciprocal Rank Fusion (RRF)
+  Merges & scores both result pools
+             │
+             ▼
+  OpenRouter Reranker (Optional)
+  Coarse-to-fine LLM reranking (Cohere Rerank 4)
+             │
+             ▼
+      Final Search Results
+```
+
+---
+
+## 1. Vector search (LanceDB)
+AllKnower maintains an embedded, in-process **LanceDB** database.
+* **Embeddings**: When you create or update a note, AllKnower chunkifies the note content and generates 4096-dimensional vectors using `qwen/qwen3-embedding-8b` via OpenRouter.
+* **Semantic retrieval**: LanceDB performs vector similarity searches, letting you find relevant notes using different vocabulary. For example, searching for *"rulers of the elven wood"* retrieves notes mentioning *"leaders of the sylvan canopy"*, avoiding the need for exact keyword matches.
+
+---
+
+## 2. Full-text keyword search (LanceDB FTS)
+To retain proper nouns (such as character names, unique spells, or specific item titles) that vector approximations might miss, AllKnower queries LanceDB's native Full-Text Search (FTS) index on the `content` column. This engine uses the **BM25 algorithm** to score chunks by term frequency and inverse document frequency.
+
+---
+
+## 3. Reciprocal rank fusion (RRF)
+The candidate sets from both LanceDB and SQLite are merged using Reciprocal Rank Fusion (RRF). RRF scores candidates by their rank in each search list instead of raw scores:
+
+$$RRF\_Score(d) = \sum_{m \in M} \frac{1}{k + r_m(d)}$$
+
+Where $r_m(d)$ is the rank of document $d$ in system $m$, and $k$ is a constant (typically 60) used to mitigate the impact of low-ranked outliers. RRF outperforms either search method alone.
+
+---
+
+## 4. LLM reranking (optional)
+For RAG context generation (feeding the AI grimoire history during Consistency scans), the fused RRF candidate list is sent to OpenRouter's native `/rerank` endpoint using `cohere/rerank-4-pro`. 
+
+The reranker scores how closely the contents of the top 20 notes answer the specific AI prompt, returning the top 5 most relevant documents to be injected into the LLM context window. This saves token costs and prevents LLM "lost in the middle" retrieval failures.

@@ -44,6 +44,21 @@ These files are checked out as a git submodule (`ThunderRonin/allcodex-docs`) in
 |---|---|
 | [v1_release_changelog.md](v1_release_changelog.md) | v1 release summary covering the architecture boundary, user-scoped credentials, auto-provisioning, and code quality |
 
+## Documentation Preview (Mintlify)
+
+The documentation is published live at [docs.allcodex.allmaker.dev](https://docs.allcodex.allmaker.dev).
+
+To run and preview the documentation site locally:
+1. Install the Mintlify CLI globally:
+   ```bash
+   npm i -g mint
+   ```
+2. Run the development server from this directory (where `docs.json` is located):
+   ```bash
+   mint dev
+   ```
+3. Open `http://localhost:3000` to view the local preview.
+
 ## Archive
 
 | File | Purpose |

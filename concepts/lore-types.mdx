@@ -1,0 +1,57 @@
+---
+title: "Lore Entity Types"
+description: "The 21 canonical templates used to categorize and structure your worldbuilding."
+---
+
+AllCodex structures your grimoire using **21 canonical lore entity types**. When the AI brain (AllKnower) extracts elements from your raw text or dumps, it assigns each note a specific `#loreType` label and maps it to a database template.
+
+These templates promote specific attributes to the top of your notes, turning raw text documents into structured database entries.
+
+---
+
+## The 21 canonical types
+
+The 21 lore types fall into four logical categories:
+
+### 1. Actors and groups
+These entities populate your world and drive its politics.
+
+* **`character`** (`_template_character`): NPCs, PCs, historical figures, or villains. Promotes: `fullName`, `aliases`, `age`, `race`, `gender`, `affiliation`, `role`, `status`, `secrets`, `goals`.
+* **`faction`** (`_template_faction`): Political factions, major nations, or alliances. Promotes: `factionType`, `foundingDate`, `leader`, `goals`, `secrets`, `status`.
+* **`organization`** (`_template_organization`): Guilds, merc bands, shops, or local clubs. Promotes: `orgType`, `purpose`, `foundingDate`, `leader`, `headquarters`, `status`, `secrets`.
+* **`race`** (`_template_race`): Playable and non-playable species or heritages. Promotes: `racialType`, `homeland`, `physicalTraits`, `culture`, `languages`, `lifespan`, `abilities`.
+
+### 2. Places and spaces
+The geography and cosmic order of your settings.
+
+* **`location`** (`_template_location`): Continents, cities, regions, dungeons, or coordinates. Promotes: `locationType`, `region`, `population`, `ruler`, `secrets`, `geolocation`.
+* **`building`** (`_template_building`): Specific structures such as taverns, castles, or temples. Promotes: `buildingType`, `owner`, `purpose`, `condition`, `secrets`.
+* **`cosmology`** (`_template_cosmology`): Planes of existence, stars, celestial bodies, or realms. Promotes: `domain`, `laws`, `source`, `planes`.
+
+### 3. Lore and mechanics
+The items, spells, and TTRPG mechanics that populate your sessions.
+
+* **`statblock`** (`_template_statblock`): D&D/TTRPG-style monster/NPC sheets. Promotes: `challengeRating`, `creatureType`, `size`, `alignment`, `ac`, `hp`, `speed`, stats (Str/Dex/Con/Int/Wis/Cha), `abilities`, `actions`, `legendaryActions`.
+* **`creature`** (`_template_creature`): In-world beasts, monsters, or plants, focusing on narrative description rather than mechanics. Promotes: `creatureType`, `habitat`, `diet`, `dangerLevel`, `abilities`.
+* **`item`** (`_template_item`): Magic items, relics, weapons, or gear. Promotes: `itemType`, `rarity`, `creator`, `magicProperties`, `history`.
+* **`spell`** (`_template_spell`): Magic spells, hexes, or rituals. Promotes: `school`, `level`, `castingTime`, `range`, `components`, `duration`.
+* **`language`** (`_template_language`): Regional dialects, ancient runes, or scripts. Promotes: `languageFamily`, `speakers`, `script`, `samplePhrase`.
+
+### 4. History, narrative, and play
+The events of your world and the records of your game sessions.
+
+* **`event`** (`_template_event`): Historical events, wars, battles, or disasters. Promotes: `inWorldDate`, `outcome`, `consequences`, `secrets`.
+* **`timeline`** (`_template_timeline`): A collection of events organized in chronological order. Promotes: `calendarSystem`.
+* **`myth`** (`_template_myth`): Legends, folklore, rumors, or local myths. Promotes: `mythType`, `origin`, `tellers`, `truthBasis`, `significance`, `secrets`.
+* **`deity`** (`_template_deity`): Gods, demigods, archdevils, or divine entities. Promotes: `domains`, `alignment`, `rank`, `symbol`, `worshippers`.
+* **`religion`** (`_template_religion`): Faiths, churches, cults, or pantheons. Promotes: `deity`, `pantheon`, `tenets`, `clergy`, `holyDays`, `headquarters`.
+* **`session`** (`_template_session`): TTRPG play session records and recaps. Promotes: `sessionDate`, `players`, `sessionStatus`, `recap`, `hooks`, `gmNotes`.
+* **`quest`** (`_template_quest`): Quest lines, bounties, or plot hooks. Promotes: `questStatus` (active, completed, failed, deferred), `questGiver`, `reward`, `location`, `hooks`, `consequences`.
+* **`scene`** (`_template_scene`): Individual combat scenes, social encounters, or set-pieces. Promotes: `location`, `participants`, `outcome`, `gmNotes`.
+* **`manuscript`** (`_template_manuscript`): Books, diaries, letters, or in-world texts. Promotes: `genre`, `manuscriptStatus`, `wordCount`.
+
+---
+
+## Detailed properties reference
+
+For the exact list of attributes, valid values, and database IDs, please consult the [Canonical Lore Schema](/reference/lore-schema) reference guide.

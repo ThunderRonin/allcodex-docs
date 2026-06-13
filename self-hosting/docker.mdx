@@ -1,0 +1,167 @@
+---
+title: "Docker Compose Deployment"
+description: "Deploy the full AllCodex stack in minutes using Docker Compose."
+---
+
+Deploying AllCodex via Docker Compose is the recommended method for production self-hosting. It runs the three services in isolated containers while mapping their data folders and network interfaces to the host.
+
+---
+
+## 1. Prerequisites and dependencies
+
+Before you begin, ensure you have the following installed on your host:
+- [Docker](https://docs.docker.com/get-docker/) and the Compose plugin.
+- **PostgreSQL database**: AllKnower (the AI backend) uses PostgreSQL to store user sessions, histories, and usage budgets.
+  1. Connect to an existing PostgreSQL instance running on your host machine.
+  2. Use the self-contained compose file below to run PostgreSQL in a container alongside the AllCodex services.
+
+---
+
+## 2. Docker Compose configuration
+
+Create a folder for your deployment and configure the `docker-compose.yml` file.
+
+```bash
+mkdir -p allcodex-grimoire
+cd allcodex-grimoire
+```
+
+### Self-contained deployment (includes PostgreSQL)
+
+This configuration includes a PostgreSQL container. The services use `network_mode: host` to share the host's network, binding the database to port `5432` on localhost.
+
+```yaml docker-compose.yml
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: allcodex-postgres
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=allknower
+    volumes:
+      - /srv/allcodex/postgres-data:/var/lib/postgresql/data
+
+  core:
+    image: ghcr.io/thunderronin/allcodex-core:dev
+    container_name: allcodex-core
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TRILIUM_DATA_DIR=/srv/allcodex/core-data
+      - USER_UID=999
+      - USER_GID=988
+    env_file:
+      - /etc/allcodex/core.env
+    volumes:
+      - /srv/allcodex:/srv/allcodex
+    depends_on:
+      - postgres
+
+  knower:
+    image: ghcr.io/thunderronin/allknower:dev
+    container_name: allknower
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - /etc/allcodex/allknower.env
+    volumes:
+      - /srv/allcodex:/srv/allcodex
+    depends_on:
+      - postgres
+
+  portal:
+    image: ghcr.io/thunderronin/allcodex-portal:dev
+    container_name: allcodex-portal
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - /etc/allcodex/portal.env
+    depends_on:
+      - knower
+```
+
+---
+
+## 3. Creating environment files
+
+AllCodex reads configurations from environment files located in `/etc/allcodex/` on your host server. Create the directory and touch the config files:
+
+```bash
+sudo mkdir -p /etc/allcodex /srv/allcodex
+sudo touch /etc/allcodex/core.env /etc/allcodex/allknower.env /etc/allcodex/portal.env
+```
+
+### Core configuration (`core.env`)
+Configure Core to listen on port 8080:
+
+```env /etc/allcodex/core.env
+PORT=8080
+ALLCODEX_PASSWORD=your_secure_db_admin_password
+```
+
+### AllKnower configuration (`allknower.env`)
+Provide database credentials, OpenRouter key, and encryption secrets:
+
+```env /etc/allcodex/allknower.env
+PORT=3001
+# Connects to the local postgres container on port 5432
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/allknower?schema=public
+OPENROUTER_API_KEY=your_openrouter_api_key
+
+# Secrets for user authentication and token encryption
+BETTER_AUTH_SECRET=generate_a_random_32_character_string_here
+PORTAL_INTERNAL_SECRET=generate_a_long_random_string_here
+INTEGRATION_CREDENTIALS_KEY=generate_a_64_character_hexadecimal_string_here
+```
+
+<Warning>
+  The `INTEGRATION_CREDENTIALS_KEY` is a 32-byte key (represented as a 64-character hex string) used to encrypt your AllCodex ETAPI tokens at rest in the PostgreSQL database. **Keep this safe.**
+</Warning>
+
+### Portal configuration (`portal.env`)
+Configure the Portal to point to the backend services:
+
+```env /etc/allcodex/portal.env
+PORT=3000
+ALLCODEX_URL=http://localhost:8080
+ALLKNOWER_URL=http://localhost:3001
+PORTAL_INTERNAL_SECRET=must_match_the_allknower_internal_secret_above
+```
+
+---
+
+## 4. Starting the containers
+
+Run the compose file to pull images and start the services:
+
+```bash
+docker compose up -d
+```
+
+Verify that all four services are active and running:
+
+```bash
+docker compose ps
+```
+
+---
+
+## 5. Checking logs
+
+Check container logs to troubleshoot issues:
+
+```bash
+# Core Database Logs
+docker logs allcodex-core --tail 50
+
+# AI Backend Logs
+docker logs allknower --tail 50
+
+# Web Portal Logs
+docker logs allcodex-portal --tail 50
+```

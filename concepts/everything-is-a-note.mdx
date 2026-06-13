@@ -1,0 +1,75 @@
+---
+title: "Everything is a Note"
+description: "Understanding the flexible note, attribute, and branch structure of AllCodex Core."
+---
+
+AllCodex Core uses a flexible object-graph model instead of traditional SQL tables. **Everything is a note.** 
+
+---
+
+## The anatomy of a note
+
+A record in the `notes` table represents every entity in your grimoire, including characters, locations, items, custom CSS stylesheets, and system templates.
+
+A note consists of three primary layers:
+1. **Metadata**: Fundamental properties stored in the database record (ID, title, type, dates).
+2. **Blob Content**: The rich text body (HTML) or file binary stored in a separate table.
+3. **Attributes**: Key-value pairs (**labels**) and pointers to other notes (**relations**).
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                           LORE NOTE                              │
+│                                                                  │
+│  ID: k82sJ91a    Title: "Lord Michael Ashvane"   Type: "text"    │
+├──────────────────────────────────────────────────────────────────┤
+│  ATTRIBUTES (Metadata)                                           │
+│  Labels:                                                         │
+│    #lore                             #loreType = "character"     │
+│    #affiliation = "Dawn Shield"      #status = "alive"           │
+│  Relations:                                                      │
+│    ~template ───► [Template Character note]                      │
+│    ~relLocatedIn ───► [Blackstone Keep note]                     │
+├──────────────────────────────────────────────────────────────────┤
+│  CONTENT (HTML Blob)                                             │
+│  <p>Lord Michael Ashvane is an aging paladin...</p>              │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Branches and multi-parenting
+
+Traditional folders limit files to a single directory. In AllCodex, branches organize notes into a tree representing parent-child relationships. 
+
+AllCodex supports **multi-parenting**, allowing multiple branches to point to a single note.
+
+For example, the NPC **"Michael Ashvane"** can live under multiple paths:
+- `Lore / Characters / Solara`
+- `Factions / Dawn Shield / Officers`
+- `Campaign / Sessions / Session 1 Recap / NPCs Met`
+
+Editing the note in one path updates all paths because the system stores a single underlying note record; only the organizational branches point to it.
+
+---
+
+## Attributes: labels vs. relations
+
+Attributes attach metadata to notes. They drive formatting, search queries, and AI analysis.
+
+### Labels (`#`)
+Labels are key-value pairs representing properties. If a label has no value, it functions as a tag.
+* **Tag Example**: `#lore` (designates a note as belonging to the campaign wiki, indexing it for vector searches).
+* **Key-Value Example**: `#age = "67"` or `#gender = "Male"`.
+
+### Relations (`~`)
+Relations are directed pointers from one note to another.
+* **Example**: The relation `~relLocatedIn` on the note *Lord Michael Ashvane* has a value equal to the note ID of *Blackstone Keep*.
+* Relations enable the **Visual Relationship Graph** to draw links between entities and allow the AI to traverse connections.
+
+---
+
+## Promoted attributes
+
+AllCodex supports **Promoted Attributes** to provide a structured database interface. 
+
+Linking a note to a template via the `~template` relation promotes the template's attributes to the top of the note. This displays structured fields (such as text inputs and dropdowns) for attributes like `age`, `ruler`, `population`, or `challengeRating` instead of raw markdown or free-form tags.

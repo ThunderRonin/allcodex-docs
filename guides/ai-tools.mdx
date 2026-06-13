@@ -1,0 +1,43 @@
+---
+title: "AI Analysis Tools"
+description: "Scan your campaign grimoire for contradictions, relationship links, and narrative gaps."
+---
+
+AllCodex includes three analytical tools to maintain consistency, discover connections, and identify gaps in your TTRPG campaign preparation.
+
+---
+
+## 1. Consistency checker
+
+The Consistency Checker scans your lore tree for contradictions. It helps prevent discrepancies as your campaign details expand.
+
+### How it works
+1. **RAG context retrieval**: The checker uses your selected note as a starting point, retrieves conceptually related chunks from your database using vector search (RAG), and feeds them into the consistency analysis model.
+2. **Scan**: It looks for direct contradictions (e.g. NPC age discrepancies, dead characters suddenly appearing in recent session notes, or conflicting faction leaders).
+3. **Contradiction reports**: It returns structured alerts detailing the exact notes and the contradiction detected.
+
+---
+
+## 2. Relationship suggester
+
+The Relationship Suggester connects entities by identifying narrative links and suggesting relationships between notes.
+
+### Features
+* **Automatic suggestion**: When you view a note's relationship panel, the suggester scans the note text and recommends connections to other entities (such as *ally*, *serves*, *located_in*, or *member_of*).
+* **Caching and deduplication**: To minimize token usage, AllKnower caches suggestions by content hash. Repeating a query on an unmodified note costs zero tokens. The system deduplicates in-flight requests to prevent parallel LLM calls.
+* **Canonical mapping**: Suggested relations strictly map to AllCodex's 17 canonical relationship types (e.g. `~relMemberOf`, `~relLocatedIn`). 
+* **Easy application**: Apply suggestions to write them to your database as bidirectional attributes.
+
+---
+
+## 3. Gap detector
+
+The Gap Detector identifies parts of your campaign preparation that need more development.
+
+### How to use it
+1. **Select scope**: Choose a note subtree (e.g. a continent location, a dungeon, or a list of quests).
+2. **Analysis**: The AI scans the description text and attribute density of the selected notes.
+3. **Actionable suggestions**: It returns a list of areas that lack detail. For example:
+   * *"The faction 'Dawn Shield' has no leader defined."*
+   * *"Blackstone Keep has a high population but no buildings or taverns are documented under it."*
+   * *"Session 3 mentions a magic artifact 'Eye of the Storm' but no corresponding item note has been created."*
