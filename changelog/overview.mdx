@@ -53,6 +53,13 @@ The per-entry share panel now surfaces the computed share URL, a custom alias sl
 
 The Portal, landing page, and favicon now use the new grimoire logo, replacing the previous generic scroll icon across navigation, sidebar, and browser tabs.
 
+## Fixes
+
+- **Public share visibility** — Resolves correctly so published lore is reliably reachable from public URLs.
+- **Share settings audit** — The settings panel shows a clear warning when a note isn't in the share tree, preventing confusion about why a "published" note isn't visible.
+- **Hardened owner auth failure paths** — Lookup failures return a controlled `503` and bootstrap sign-up now fails cleanly if owner promotion cannot resolve the created user.
+- **Anonymous owner lookups** — Short-circuit instead of doing unnecessary work, improving response times for unauthenticated requests.
+
 </Update>
 
 <Update label="June 6, 2026">

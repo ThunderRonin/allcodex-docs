@@ -248,6 +248,43 @@ Each note includes: `noteId`, `title`, `isDraft`, `isGmOnly`, `shareAlias`, `isP
 
 ---
 
+## Public share endpoints
+
+These routes power the Portal's public-facing site (`/` and `/public/lore/[id]`) and do not require authentication. They only return content from the configured `#shareRoot` subtree, and they strip notes tagged `#draft` or `#gmOnly`. Use them to embed AllCodex lore in your own website or to integrate a campaign wiki with other tools.
+
+| Method | Path | Description | Backend |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/public/lore/[id]` | Get a public lore note by `noteId` or `#shareAlias`. Returns sanitized HTML, display attributes, resolved relations, portrait image ID, theme song URL, and last-modified date. Returns `404` for missing, draft, or GM-only notes, and `401` if the share tree requires authentication. | AllCodex ETAPI |
+| `GET` | `/api/public/search?q=<query>` | Full-text search restricted to the share tree. Pass `q=#lore` to list all published lore. Returns `{ results: [{ id, title, score, path }] }`. | AllCodex Core share API |
+| `GET` | `/api/public/images/[id]/[filename]` | Stream an image attached to a public lore note. Returns `404` for non-public notes, `401` if the share is password-protected. Cached for 24 hours. | AllCodex Core share API |
+
+### GET `/api/public/lore/[id]` — example response
+
+```json
+{
+  "noteId": "abc123",
+  "title": "Lord Ashvane",
+  "loreType": "character",
+  "contentHtml": "<p>Lord Ashvane is a legendary general...</p>",
+  "attributes": [
+    { "name": "fullName", "value": "Lord Ashvane of Solara" },
+    { "name": "race", "value": "Human" }
+  ],
+  "resolvedRelations": [
+    { "name": "rulerOf", "targetNoteId": "def456", "targetTitle": "Solara", "loreType": "location" }
+  ],
+  "portraitImageNoteId": "img789",
+  "themeSongUrl": "https://open.spotify.com/track/...",
+  "dateModified": "2026-06-10T14:22:00Z"
+}
+```
+
+<Tip>
+  Before you call these endpoints, set [`NEXT_PUBLIC_PORTAL_URL`](/self-hosting/configuration) and tag a note in your grimoire with `#shareRoot`. See [Sharing lore with players](/guides/sharing-lore) for the full setup.
+</Tip>
+
+---
+
 ## Configuration and auth
 
 | Method | Path | Description | Backend |

@@ -71,11 +71,23 @@ To simplify self-hosting, AllCodex includes a zero-login bootstrap chain:
     On startup, AllCodex Core reads the `ALLCODEX_PASSWORD` environment variable and configures its administrator password.
   </Step>
   <Step title="AllKnower startup">
-    AllKnower checks if a default administrator exists. If not, it creates a default account and runs a loopback authentication call to AllCodex Core using the startup password. It then generates an ETAPI token and stores it as an encrypted `UserIntegration` record in its Postgres database.
+    AllKnower checks if a default administrator exists. If not, it creates a default account and records that user as the **owner** — the single principal authorized to call protected APIs. AllKnower then runs a loopback authentication call to AllCodex Core using the startup password, generates an ETAPI token, and stores it as an encrypted `UserIntegration` record in its Postgres database.
   </Step>
   <Step title="Portal intercept">
     When a browser first visits the Portal, Next.js middleware detects that the `allknower_token` cookie is missing. The middleware calls AllKnower's internal `/internal/auto-provision` route using a shared portal secret and retrieves a session token for the bootstrapped default user. It then sets that token as an HTTP-only cookie in the user's browser.
+
+    `/internal/auto-provision` is only enabled when `NODE_ENV` is not `production`, so it cannot be used to mint sessions against a production deployment.
   </Step>
 </Steps>
 
-The result is a **zero-click startup experience** in developer/single-user setups, while full authentication gates remain active for multi-user TTRPG groups.
+The result is a **zero-click startup experience** for single-user, self-hosted deployments.
+
+### Single-owner authorization model
+
+AllKnower enforces a single-owner model: only the user recorded as the owner during bootstrap can call protected APIs.
+
+- Authenticated requests from any other user receive `403 Forbidden`.
+- Anonymous requests receive `401 Unauthorized`.
+- Public sign-up via `POST /api/auth/sign-up/email` is disabled and returns `403 FORBIDDEN` unless the request includes an `X-AllCodex-Bootstrap-Secret` header matching `PORTAL_INTERNAL_SECRET`. This header is used internally during bootstrap and is not intended for end-user account creation.
+
+AllCodex is designed for a single self-hosted worldbuilder per deployment. To collaborate on a world, see [Sharing lore](/guides/sharing-lore).

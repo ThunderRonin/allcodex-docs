@@ -3,7 +3,12 @@ title: "Sharing Lore with Players"
 description: "How to publish public, player-safe wikis from your grimoire."
 ---
 
-AllCodex includes a share rendering engine. You can publish a folder or branch of your lore tree as a public, read-only website for your players. Secret GM notes and draft content stay completely hidden.
+AllCodex includes a powerful share rendering engine. You can publish a folder or branch of your lore tree as a public, read-only website for your players. Secret GM notes and draft content stay completely hidden.
+
+There are two ways to serve a share:
+
+- **Portal public site (recommended)** — the Portal hosts a branded, search-enabled public site at `/public/lore/[id]` on the domain configured by `NEXT_PUBLIC_PORTAL_URL`. The landing page (`/`) shows the configured share root, a list of published lore, and a search box.
+- **Core share endpoint** — AllCodex Core also serves raw shared HTML at `http://your-core-ip:8080/share/noteId`. Use this if you don't run the Portal.
 
 ---
 
@@ -11,8 +16,9 @@ AllCodex includes a share rendering engine. You can publish a folder or branch o
 
 To publish a section of your grimoire:
 
-1. **Tag the share root**: Go to the note or folder you want to share and attach the label `#shareRoot`.
-2. **Access the URL**: The share will be served at `http://your-core-ip:8080/share/noteId` (or via custom slugs).
+1. **Tag the share root**: Open the note or folder you want to share, open the share settings panel, and select **Set as share root**. This attaches the `#shareRoot` label and registers the note under `_share` in Core.
+2. **Set the portal URL**: In your Portal deployment, set [`NEXT_PUBLIC_PORTAL_URL`](/self-hosting/configuration) to the public domain players will visit (for example, `https://wiki.example.com`).
+3. **Share the link**: The share settings panel shows the computed URL — `${NEXT_PUBLIC_PORTAL_URL}/public/lore/<noteId-or-alias>`. Send that link to your players, or send them to the Portal root to browse and search.
 
 ---
 
@@ -28,6 +34,10 @@ You can fine-tune how shared trees behave by adding these canonical labels to yo
 | **`#shareIndex`** | (none) | Marks the selected note as the default home/landing page of the share. |
 | **`#shareHiddenFromTree`**| (none) | Keeps the note accessible via direct link, but hides it from the sidebar navigation tree. |
 | **`#shareDisallowRobotIndexing`** | (none) | Injects `noindex` headers to prevent Google and search engines from indexing your campaign wiki. |
+
+<Tip>
+  When you serve through the Portal, custom aliases work directly in the URL: a note labeled `#shareAlias=blackstone` is reachable at `/public/lore/blackstone` as well as `/public/lore/<noteId>`.
+</Tip>
 
 ---
 
