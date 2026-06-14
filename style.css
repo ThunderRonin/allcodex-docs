@@ -110,3 +110,9 @@ code, pre {
   border: 1px solid #4a3a60 !important;
   color: #e6e0f0 !important;
 }
+
+/* ── Custom Layout Adjustments ── */
+/* Add spacing between custom navbar links and the right-side separator */
+header a:not([href="/"]) {
+  margin-right: 1.25rem !important;
+}
