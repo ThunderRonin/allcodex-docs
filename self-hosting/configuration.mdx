@@ -34,6 +34,8 @@ These variables configure database models, connections, OpenRouter keys, and mod
 | `LANCE_DB_PATH` | `/srv/allcodex/knower-data/lancedb` | Directory where LanceDB vector and FTS tables are persisted. |
 | `OPENROUTER_API_KEY`| (none) | Your OpenRouter API Key. |
 | `OPENROUTER_BASE_URL`| `https://openrouter.ai/api/v1` | Custom OpenRouter API base endpoint. |
+| `LOCAL_PROVIDER_BASE_URL`| `http://localhost:11434/v1` | OpenAI-compatible base URL for a local model server (Ollama, LM Studio, etc.). |
+| `LOCAL_PROVIDER_API_KEY`| `ollama` | API key for the local provider. Most local servers accept any non-empty value. |
 | `PORTAL_INTERNAL_SECRET`| (none) | A secure, random token shared with the Portal to verify auto-provisioning. |
 | `BETTER_AUTH_SECRET` | (none) | Secret used by better-auth to sign cookies and tokens. Must be $\ge 16$ characters in production. |
 | `BETTER_AUTH_URL` | `http://localhost:3001` | The canonical URL of the AllKnower auth server. |
