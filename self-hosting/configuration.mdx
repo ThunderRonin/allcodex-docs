@@ -70,11 +70,6 @@ Override the default models for specific tasks. Each task supports a primary mod
 
 AllKnower can route any LLM or embedding task to a local OpenAI-compatible server such as [Ollama](https://ollama.com/), [LM Studio](https://lmstudio.ai/), or vLLM. This lets you run AllCodex fully offline or mix local and cloud models in the same fallback chain.
 
-| Variable | Default | Description |
-| :--- | :--- | :--- |
-| `LOCAL_PROVIDER_BASE_URL` | `http://localhost:11434/v1` | OpenAI-compatible base URL for your local provider. Defaults to Ollama. |
-| `LOCAL_PROVIDER_API_KEY` | `ollama` | API key sent to the local provider. Most local servers ignore the value but require the field. |
-
 To send a task to your local provider, prefix the model name with `ollama/` or `local/`. AllKnower strips the prefix before calling the local server and automatically removes OpenRouter-only fields (`models`, `plugins`, `provider`) so requests stay compatible.
 
 Local models participate in the same fallback chain as cloud models. You can lead with a local model and fall back to a cloud model when the local server is offline, or the reverse.
