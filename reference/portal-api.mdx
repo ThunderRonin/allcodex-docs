@@ -1,6 +1,6 @@
 ---
 title: "Portal API Proxy"
-description: "Reference guide for all AllCodex Portal Next.js API proxy routes."
+description: "Reference for the AllCodex Portal Next.js API proxy routes, covering credential flow, ETAPI forwarding, AllKnower endpoints, and zero-login provisioning."
 ---
 
 The Portal acts as a Backend for Frontend (BFF) proxy. The browser does not communicate directly with the database (AllCodex Core) or the parsing brain (AllKnower). It sends requests to `/api/*` on the Portal, which parses authentication cookies server-side and forwards requests to private backends.
