@@ -346,7 +346,7 @@ Add lightweight contract tests for Portal-facing routes to prevent future drift.
 - Test `GET /brain-dump/history/:id` returns full entry
 - Test `GET /suggest/autocomplete?q=test` returns `{ suggestions: [...] }`
 - Test `GET /health` returns expected shape
-- Use `bun:test` with mock.module for ETAPI/LLM dependencies
+- Use `bun:test` with mock.module for ETAPI/parser dependencies
 
 **Files:** 1 new
 

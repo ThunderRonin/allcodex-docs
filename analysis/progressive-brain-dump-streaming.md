@@ -6,7 +6,7 @@ This note records the shipped progressive entity rendering and SSE reliability w
 
 ## Current Flow
 
-The Portal calls AllKnower's `/brain-dump/stream` endpoint and renders entity cards while the LLM response is still streaming. The UI no longer waits for the final write phase before showing extracted entities.
+The Portal calls AllKnower's `/brain-dump/stream` endpoint and renders entity cards while the parser response is still streaming. The UI no longer waits for the final write phase before showing extracted entities.
 
 ```text
 SSE token event
@@ -30,13 +30,13 @@ SSE done
 - Added token event count, elapsed timer, abort handling, stream result normalization, toasts, and query invalidation from the store.
 - Updated the Brain Dump page to show completed and partial entity cards while streaming and through the write/complete phases.
 - Fixed the Portal SSE parser to flush any final buffered line on stream close, so a terminal `done` event is not dropped.
-- Added AllKnower SSE keepalive comments every 10 seconds to prevent idle stream closure during long RAG, LLM, and write gaps.
+- Added AllKnower SSE keepalive comments every 10 seconds to prevent idle stream closure during long RAG, parser, and write gaps.
 
 ## Reliability Fix
 
 Live integration initially failed after the backend created history and notes because the browser never received the final `done` event. Two conditions caused the failure:
 
-- AllKnower had long quiet periods during RAG, LLM, and database writes.
+- AllKnower had long quiet periods during RAG, parser, and database writes.
 - The Portal client parser could drop a final buffered event if the stream closed immediately after the terminal line.
 
 The fix is two-sided:

@@ -21,7 +21,7 @@ These variables configure database paths, ports, and startup credentials.
 
 ---
 
-## AllKnower (AI brain)
+## AllKnower (parsing brain)
 
 These variables configure database models, connections, OpenRouter keys, and model selections.
 
@@ -68,7 +68,7 @@ Override the default models for specific tasks. Each task supports a primary mod
 
 ### Local model providers
 
-AllKnower can route any LLM or embedding task to a local OpenAI-compatible server such as [Ollama](https://ollama.com/), [LM Studio](https://lmstudio.ai/), or vLLM. This lets you run AllCodex fully offline or mix local and cloud models in the same fallback chain.
+AllKnower can route any parser or embedding task to a local OpenAI-compatible server such as [Ollama](https://ollama.com/), [LM Studio](https://lmstudio.ai/), or vLLM. This lets you run AllCodex fully offline or mix local and cloud models in the same fallback chain.
 
 To send a task to your local provider, prefix the model name with `ollama/` or `local/`. AllKnower strips the prefix before calling the local server and automatically removes OpenRouter-only fields (`models`, `plugins`, `provider`) so requests stay compatible.
 

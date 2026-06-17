@@ -9,7 +9,7 @@ AllCodex uses a **hybrid search engine** that fuses semantic vector search with 
 
 ## The search pipeline
 
-When you search for something in the Portal or when the AI retrieves lore context, AllKnower executes a four-stage search pipeline:
+When you search for something in the Portal or when the parser retrieves lore context, AllKnower executes a four-stage search pipeline:
 
 ```
   Search Query (e.g., "dwarf king weapon")
@@ -26,7 +26,7 @@ When you search for something in the Portal or when the AI retrieves lore contex
              │
              ▼
   OpenRouter Reranker (Optional)
-  Coarse-to-fine LLM reranking (Cohere Rerank 4)
+  Coarse-to-fine Semantic reranking (Cohere Rerank 4)
              │
              ▼
       Final Search Results
@@ -55,7 +55,7 @@ Where $r_m(d)$ is the rank of document $d$ in system $m$, and $k$ is a constant 
 
 ---
 
-## 4. LLM reranking (optional)
-For RAG context generation (feeding the AI grimoire history during Consistency scans), the fused RRF candidate list is sent to OpenRouter's native `/rerank` endpoint using `cohere/rerank-4-pro`. 
+## 4. Semantic reranking (optional)
+For RAG context generation (feeding the parser grimoire history during Consistency scans), the fused RRF candidate list is sent to OpenRouter's native `/rerank` endpoint using `cohere/rerank-4-pro`. 
 
-The reranker scores how closely the contents of the top 20 notes answer the specific AI prompt, returning the top 5 most relevant documents to be injected into the LLM context window. This saves token costs and prevents LLM "lost in the middle" retrieval failures.
+The reranker scores how closely the contents of the top 20 notes answer the specific AI prompt, returning the top 5 most relevant documents to be injected into the parser context window. This saves token costs and prevents parser "lost in the middle" retrieval failures.

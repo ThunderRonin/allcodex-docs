@@ -21,7 +21,7 @@ The dedicated "Blackstone Keep" integration scenario confirms exact-name retriev
 - Extracted RRF scoring into `src/rag/rrf.ts` with unit coverage.
 - Enriched retrieval logs with vector/BM25 candidate counts, RRF settings, and rerank settings.
 - Added FTS index health tracking to `checkLanceDbHealth()`.
-- Added `/brain-dump/stream` SSE keepalive comments after live integration exposed idle stream closure during long RAG, LLM, and write phases.
+- Added `/brain-dump/stream` SSE keepalive comments after live integration exposed idle stream closure during long RAG, parser, and write phases.
 - Updated e2e env mocks so hybrid defaults are defined in test mode. Missing mock values previously produced `NaN` RRF and rerank values that serialized to invalid responses.
 
 ## Tunable Environment Fields

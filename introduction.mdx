@@ -1,9 +1,9 @@
 ---
 title: "Introduction"
-description: "Welcome to AllCodex, the AI-powered TTRPG worldbuilding grimoire."
+description: "Welcome to AllCodex, the deterministic cross-referencing TTRPG worldbuilding grimoire."
 ---
 
-AllCodex is a three-service worldbuilding platform designed for Dungeon Masters, writers, and worldbuilders. It functions as an interactive "grimoire" where you can dump raw lore and thoughts, and let AI process, structure, and connect the elements.
+AllCodex is a three-service worldbuilding platform designed for Dungeon Masters, writers, and worldbuilders. It functions as an interactive "grimoire" where you can dump raw lore and thoughts. The system automatically structures, connects, and cross-references your elements, so you never have to manually tag a markdown file again.
 
 ```
                   ┌────────────────────────────────────────┐
@@ -14,7 +14,7 @@ AllCodex is a three-service worldbuilding platform designed for Dungeon Masters,
                               ▼                ▼
      ┌───────────────────────────────┐  ┌───────────────────────────────┐
      │      AllKnower (Bun/Elysia)   │  │   AllCodex Core (Express)     │
-     │      AI Orchestrator & RAG    │  │   Lore Database (Trilium)     │
+     │      Semantic Graph Compiler & RAG    │  │   Lore Database (Trilium)     │
      └───────────────┬───────────────┘  └───────────────────────────────┘
                      │                          ▲
                      └──────────────────────────┘
@@ -30,7 +30,7 @@ AllCodex is split into three decoupled components, keeping your lore storage, AI
     A sleek, grimoire-themed web interface built in Next.js 16 and React 19. It serves as your control center.
   </Card>
   <Card title="AllKnower" icon="brain" href="/concepts/architecture">
-    The AI brain. Built on Elysia and Bun, it coordinates LLMs, handles vector embeddings, and processes relations.
+    The parsing brain. Built on Elysia and Bun, it coordinates semantic parsers, handles vector embeddings, and processes relations.
   </Card>
   <Card title="AllCodex Core" icon="database" href="/concepts/everything-is-a-note">
     The storage engine. A customized, headless fork of Trilium, serving as a highly flexible hierarchical lore database.
@@ -45,9 +45,9 @@ Discover how AllCodex transforms raw, unstructured worldbuilding notes into a de
 
 <CardGroup cols={2}>
   <Card title="Brain Dump Pipeline" icon="file-arrow-up" href="/guides/brain-dump">
-    Dump raw thoughts, campaign sessions, or messy notes. AllKnower streams the content to LLMs, extracts clean lore entities, and seeds them into your database.
+    Dump raw thoughts, campaign sessions, or messy notes. AllKnower streams the content to the Deterministic Parsing Engine, extracts clean lore entities, and seeds them into your database.
   </Card>
-  <Card title="AI Consistency & Gap Tools" icon="wand-sparkles" href="/guides/ai-tools">
+  <Card title="Automated Consistency & Gap Tools" icon="wand-sparkles" href="/guides/ai-tools">
     Run automated analyses to detect logical gaps in your world, find contradictions, and suggest deep entity relationships.
   </Card>
   <Card title="Visual Relationship Graph" icon="chart-network" href="/guides/relationship-graph">

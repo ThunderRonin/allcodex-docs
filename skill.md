@@ -1,6 +1,6 @@
 ---
 name: allcodex
-description: Understand the AllCodex AI-powered TTRPG worldbuilding grimoire, its 21 lore types, and ETAPI reference.
+description: Understand the AllCodex deterministic cross-referencing TTRPG worldbuilding grimoire, its 21 lore types, and ETAPI reference.
 ---
 
 # AllCodex Documentation Skill

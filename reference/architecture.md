@@ -12,7 +12,7 @@
 4. [AllCodex Portal (The Interface)](#4-allcodex-portal-the-interface)
 5. [Data Flow: Brain Dump Pipeline](#5-data-flow-brain-dump-pipeline)
 6. [Data Flow: Lore Browsing](#6-data-flow-lore-browsing)
-7. [Data Flow: AI Analysis Tools](#7-data-flow-ai-analysis-tools)
+7. [Data Flow: Automated Analysis Tools](#7-data-flow-ai-analysis-tools)
 8. [Data Flow: RAG Indexing](#8-data-flow-rag-indexing)
 9. [Data Flow: Public Share Pages](#9-data-flow-public-share-pages)
 10. [Authentication and Credentials](#10-authentication-and-credentials)
@@ -32,7 +32,7 @@ The ecosystem is three services:
 | Service | Repo | Stack | Port | Role |
 |---|---|---|---|---|
 | **AllCodex Core** | `allcodex-core/` | Node.js, Express 5, SQLite, EJS | 8080 | Lore database. Stores every note, attribute, and relation. Serves ETAPI and public share pages. |
-| **AllKnower** | `allknower/` | Bun, Elysia, PostgreSQL, LanceDB | 3001 | AI orchestrator. Runs brain dumps, embeddings, consistency checks, relationship suggestions, gap detection. |
+| **AllKnower** | `allknower/` | Bun, Elysia, PostgreSQL, LanceDB | 3001 | semantic graph compiler. Runs brain dumps, embeddings, consistency checks, relationship suggestions, gap detection. |
 | **AllCodex Portal** | `allcodex-portal/` | Next.js 16, React 19, TanStack Query, shadcn/ui | 3000 | Web frontend. The user never touches AllCodex Core or AllKnower directly; the Portal is the single interface. |
 
 Communication is unidirectional for data writes:
@@ -147,7 +147,7 @@ The search engine lives in `apps/server/src/services/search/`. It parses query s
 
 ### What it is
 
-An Elysia server running on Bun. It provides AI-powered features that AllCodex cannot do on its own:
+An Elysia server running on Bun. It provides deterministic cross-referencing features that AllCodex cannot do on its own:
 
 - **Brain Dump Pipeline**: raw text in, structured lore notes out
 - **RAG System**: hybrid vector + BM25 retrieval over lore chunks, RRF fusion, optional OpenRouter rerank
@@ -166,7 +166,7 @@ AllKnower uses two databases:
 
 ### Models used
 
-All LLM and embedding calls go through OpenRouter. Each task has a configurable primary model plus up to two fallbacks (all env-overridable). OpenRouter handles failover server-side with a single HTTP request.
+All parser and embedding calls go through OpenRouter. Each task has a configurable primary model plus up to two fallbacks (all env-overridable). OpenRouter handles failover server-side with a single HTTP request.
 
 | Task | Default Model | Purpose |
 |---|---|---|
@@ -205,7 +205,7 @@ All LLM and embedding calls go through OpenRouter. Each task has a configurable 
 | `GET` | `/suggest/history/:noteId` | Applied-relationship history for a note |
 | `GET\|POST` | `/suggest/gaps` | Detect underdeveloped lore areas (POST preferred — avoids caching on long AI payloads) |
 | `POST` | `/suggest/gaps/stream` | SSE streaming variant of gap detection |
-| `GET` | `/suggest/autocomplete?q=...` | Title autocomplete (3-phase: prefix → RAG → LLM) |
+| `GET` | `/suggest/autocomplete?q=...` | Title autocomplete (3-phase: prefix → RAG → parser) |
 | `GET` | `/suggest/autocomplete/stream?q=...` | SSE streaming variant of title autocomplete |
 | `POST` | `/import/system-pack` | Import SRD/system JSON packs as statblock notes |
 | `POST` | `/import/azgaar` | Import an Azgaar Fantasy Map Generator export |
@@ -223,7 +223,7 @@ All LLM and embedding calls go through OpenRouter. Each task has a configurable 
 | `GET\|PUT` | `/usage/budgets` | Read/set the user's token-budget thresholds |
 | `GET` | `/usage/alert-status` | Whether the user is over budget / nearing alert threshold |
 | `POST` | `/usage/refresh-pricing` | Refresh model pricing table (non-production only) |
-| `GET` | `/metrics/llm` | LLM call metrics (daily burn, totals) |
+| `GET` | `/metrics/llm` | parser call metrics (daily burn, totals) |
 | `GET` | `/health` | Service health (AllCodex, Postgres, LanceDB including FTS health, bootstrap status) |
 | `POST` | `/api/auth/sign-up/email` | Register a new AllKnower account |
 | `POST` | `/api/auth/sign-in/email` | Login and receive a bearer token |
@@ -262,7 +262,7 @@ A Next.js 16 app with React 19. It is the only thing the user interacts with. Th
 | `/` | Dashboard | Stat cards, recent entries grid, quick actions, system status |
 | `/lore` | Lore Browser | Two-panel layout: `LoreTree` sidebar (type-category filter with counts) + filterable card grid. |
 | `/lore/new` | New Entry | `TemplatePicker` modal to select a lore type, then title + `LoreEditor` (BlockNote) + `PromotedFields` for template-specific attributes. |
-| `/lore/[id]` | Note Detail | Two-column: rendered content + sidebar with labels, relations, `RelationshipGraph` (on-demand interactive React Flow graph of existing + AI-suggested connections with filter bar, metrics, and per-suggestion Apply buttons), and "Suggest Connections" button. |
+| `/lore/[id]` | Note Detail | Two-column: rendered content + sidebar with labels, relations, `RelationshipGraph` (on-demand interactive React Flow graph of existing + automatically suggested connections with filter bar, metrics, and per-suggestion Apply buttons), and "Suggest Connections" button. |
 | `/lore/[id]/edit` | Edit Note | Title, `TemplatePicker` (template switcher), `LoreEditor` (BlockNote rich text), `PromotedFields`, draft toggle (`#draft` label), delete with confirmation. |
 | `/brain-dump` | Brain Dump | Textarea for raw text. Auto-create uses SSE streaming with progressive entity cards, token count, elapsed timer, result display, and history. State managed by `useBrainDumpStore`. |
 | `/search` | Search | Dual-mode: Semantic (RAG via AllKnower) or Attribute (ETAPI query via AllCodex) |
@@ -309,11 +309,11 @@ This is the core feature. The user pastes raw worldbuilding text and gets struct
    In `auto` mode, entities are written immediately. In `review` mode, entities are returned as proposals for user approval before a separate `POST /brain-dump/commit` writes them.
 4. **AllKnower** receives the text. Starts the pipeline:
 
-   a. **RAG Context Retrieval**: queries LanceDB with hybrid vector + BM25 retrieval, RRF fusion, and optional rerank to find relevant existing lore chunks. This prevents the LLM from contradicting existing lore. For statblock-type entities, a second grounded RAG pass fetches existing statblocks to provide system-stat context.
+   a. **RAG Context Retrieval**: queries LanceDB with hybrid vector + BM25 retrieval, RRF fusion, and optional rerank to find relevant existing lore chunks. This prevents the parser from contradicting existing lore. For statblock-type entities, a second grounded RAG pass fetches existing statblocks to provide system-stat context.
 
    b. **Prompt Construction**: builds a system prompt (role: lore architect, output format: strict JSON schema, constraints: no inventing details, no contradictions) and a user prompt (the raw text + RAG context).
 
-   c. **LLM Call**: sends the prompt to `x-ai/grok-4.1-fast` via OpenRouter. The model returns a JSON object with `entities[]` and a `summary`.
+   c. **parser Call**: sends the prompt to `x-ai/grok-4.1-fast` via OpenRouter. The model returns a JSON object with `entities[]` and a `summary`.
 
    d. **Zod Validation**: the response is parsed through `LLMResponseSchema` (`parseBrainDumpResponse`). Invalid entities are dropped individually (best-effort partial parse); valid ones proceed.
 
@@ -331,7 +331,7 @@ This is the core feature. The user pastes raw worldbuilding text and gets struct
 5. **AllKnower** returns the result: `{ summary, created[], updated[], skipped[] }`.
    - In streaming auto-create mode, it emits SSE events:
      - `status`: pipeline phase updates (`preflight`, `rag`, `llm`, `parse`, `write`, `complete`)
-     - `token`: incremental LLM JSON text, used by Portal to render provisional entity cards
+     - `token`: incremental parser JSON text, used by Portal to render provisional entity cards
      - `reasoning`: provider reasoning chunks when emitted
      - `done`: final result JSON, token count, model, latency
      - `error`: terminal error payload
@@ -358,14 +358,14 @@ This is the core feature. The user pastes raw worldbuilding text and gets struct
 
 ---
 
-## 7. Data Flow: AI Analysis Tools
+## 7. Data Flow: Automated Analysis Tools
 
 ### Consistency Check
 
 1. User optionally enters note IDs, clicks "Run".
 2. Portal calls `POST /api/ai/consistency` -> AllKnower `POST /consistency/check`.
-3. **Explicit mode** (note IDs provided): AllKnower fetches those notes from AllCodex, strips HTML to plain text, sends full content to the LLM.
-4. **Semantic sampling mode** (no note IDs): AllKnower runs a single consolidated RAG query to surface the top 8 most consistency-relevant lore entries. Up to 600 chars per note are included (bounded to keep the LLM call under the proxy timeout ceiling).
+3. **Explicit mode** (note IDs provided): AllKnower fetches those notes from AllCodex, strips HTML to plain text, sends full content to the parser.
+4. **Semantic sampling mode** (no note IDs): AllKnower runs a single consolidated RAG query to surface the top 8 most consistency-relevant lore entries. Up to 600 chars per note are included (bounded to keep the parser call under the proxy timeout ceiling).
 5. Sends sampled notes to `moonshotai/kimi-k2.5` with a system prompt asking for contradictions, timeline conflicts, orphaned references, and naming issues.
 6. Returns `{ issues[], summary }` with severity and affected note IDs.
 
@@ -674,7 +674,7 @@ Multiple `#worldVariables` notes are merged. Values are HTML-escaped.
 
 ### API Documentation
 
-Scalar interactive docs at `/docs`. OpenAPI JSON at `/etapi/openapi.json` (CORS-open for LLM/AI agents).
+Scalar interactive docs at `/docs`. OpenAPI JSON at `/etapi/openapi.json` (CORS-open for parser/AI agents).
 
 > **AllKnower** serves its own interactive docs at `/reference` (Scalar UI via `@elysiajs/openapi`).
 
@@ -700,13 +700,13 @@ src/
     allcodex.ts         Per-user AllCodex credential resolver (resolveAllCodexCredentials, connectAllCodexIntegration)
     credential-crypto.ts  AES-256-GCM encryption/decryption for stored tokens
   pipeline/
-    brain-dump.ts       Main orchestrator (RAG -> LLM -> parse -> ETAPI)
+    brain-dump.ts       Main orchestrator (RAG -> parser -> parse -> ETAPI)
     article-copilot.ts  Multi-turn article copilot turn + streaming + proposal scope validation
     azgaar.ts           Azgaar Fantasy Map Generator import pipeline (parse JSON, create notes)
     session-compactor.ts  Session compaction (Tier 3) — summarise long conversations (prepared, not route-wired)
     model-router.ts     Per-task model selection with OpenRouter fallbacks
     prompt.ts           System/user prompt builders + callLLM()
-    parser.ts           Zod parser for LLM JSON responses (LLMResponseSchema)
+    parser.ts           Zod parser for parser JSON responses (LLMResponseSchema)
     relations.ts        Relationship suggestion pipeline logic
     graph-traversal.ts  Builds the relationship graph from a note's relations (BFS over Core attributes)
     suggestion-cache.ts In-memory cache of relationship suggestions per note
@@ -732,7 +732,7 @@ src/
     consistency.ts      POST /consistency/check
     suggest.ts          POST /suggest/relationships(+/apply), /suggest/gaps(+/stream); GET /suggest/graph/:noteId, /suggest/history/:noteId, /suggest/autocomplete(+/stream)
     copilot.ts          POST /copilot/article, /copilot/article/stream (SSE) — multi-turn AI article editing
-    metrics.ts          GET /metrics/llm (LLM call metrics: daily burn, totals)
+    metrics.ts          GET /metrics/llm (parser call metrics: daily burn, totals)
     usage.ts            GET /usage/summary, /usage/budgets, /usage/alert-status; PUT /usage/budgets (token-budget dashboard)
     notifications.ts    GET /notifications/vapid-public-key, POST/DELETE /notifications (web-push subscribe/unsubscribe)
     health.ts           GET /health (deep check: AllCodex Core + Postgres + LanceDB + bootstrap)
@@ -756,7 +756,7 @@ src/
 | `accounts` | OAuth providers |
 | `verifications` | Email verification tokens |
 | `brain_dump_history` | Log of every brain dump (raw text, `rawTextHash` for idempotency dedup, parsed JSON, created/updated note ID arrays, model, token count) |
-| `llm_call_log` | Append-only log of every LLM call (task, model, tokens, latencyMs, requestId) |
+| `llm_call_log` | Append-only log of every parser call (task, model, tokens, latencyMs, requestId) |
 | `rag_index_meta` | Tracks which notes are indexed (noteId, title, chunk count, model, embeddedAt) |
 | `app_config` | Key-value store for AllKnower runtime settings (legacy — AllCodex URL/token stored here for backward compat; per-user credentials live in `user_integrations`) |
 | `user_integrations` | Per-user encrypted AllCodex ETAPI credentials (userId, provider, encryptedToken, baseUrl). Created by bootstrap for the default user; additional users provision via `/integrations/allcodex` |
@@ -823,7 +823,7 @@ app/
     lore/[id]/content/        Read/write HTML note body
     lore/[id]/image/          Proxy image blobs for editor display
     lore/[id]/preview/        Player-safe rendered preview (strips GM-only content)
-    lore/[id]/relationships/  AI relationship suggestions + existing relations for a specific note
+    lore/[id]/relationships/  relationship suggestions + existing relations for a specific note
     lore/autolink/            Scan note text for unlinked title matches
     lore/mention-search/      @-mention autocomplete (search by title prefix)
     lore/move/                Move a note to a different parent branch
@@ -1011,14 +1011,14 @@ Important current coverage:
 
 `bun run check` — runs `tsc --noEmit && vitest run`.
 
-Playwright live integration tests are separate from `bun run check` and require the full stack running on `:3000`, `:3001`, and `:8080` plus real LLM credentials:
+Playwright live integration tests are separate from `bun run check` and require the full stack running on `:3000`, `:3001`, and `:8080` plus real parser credentials:
 
 ```bash
 cd allcodex-portal
 npx playwright test --project=integration
 ```
 
-The integration project includes real LLM flows for brain dump, AI tools, and article copilot. The brain-dump live spec specifically validates the SSE path end-to-end: streaming, final `done` handling, note creation, history refresh, consistency check trigger, and navigation to the created lore note.
+The integration project includes real parser flows for brain dump, parsing tools, and article copilot. The brain-dump live spec specifically validates the SSE path end-to-end: streaming, final `done` handling, note creation, history refresh, consistency check trigger, and navigation to the created lore note.
 
 ---
 
@@ -1093,7 +1093,7 @@ graph TB
 
     AkETAPI -- "ETAPI token<br/>CRUD notes, attrs" --> ETAPI
 
-    Pipeline -- "LLM calls" --> OpenRouter
+    Pipeline -- "parser calls" --> OpenRouter
     RAG -- "Embedding calls" --> OpenRouter
 
     AkRoutes --> Postgres
@@ -1117,7 +1117,7 @@ sequenceDiagram
     participant Portal as AllCodex Portal
     participant AK as AllKnower
     participant LDB as LanceDB
-    participant LLM as OpenRouter (Grok)
+    participant parser as OpenRouter (Grok)
     participant AC as AllCodex Core (ETAPI)
 
     User->>Portal: Paste raw text, click Submit
@@ -1127,9 +1127,9 @@ sequenceDiagram
     AK->>LDB: queryLore(rawText, 10)
     LDB-->>AK: Similar lore chunks
 
-    Note over AK: Step 2-3: Prompt + LLM
-    AK->>LLM: System prompt + RAG context + raw text
-    LLM-->>AK: JSON {entities[], summary}
+    Note over AK: Step 2-3: Prompt + parser
+    AK->>parser: System prompt + RAG context + raw text
+    parser-->>AK: JSON {entities[], summary}
 
     Note over AK: Step 4: Zod Validation
     AK->>AK: parseBrainDumpResponse(json)
@@ -1152,8 +1152,8 @@ sequenceDiagram
     Note over AK: Background: Reindex
     AK->>AC: GET /notes/:id/content
     AC-->>AK: HTML
-    AK->>LLM: Embed chunks (qwen3-embedding-8b)
-    LLM-->>AK: Vectors
+    AK->>parser: Embed chunks (qwen3-embedding-8b)
+    parser-->>AK: Vectors
     AK->>LDB: upsertNoteChunks()
 ```
 
@@ -1165,7 +1165,7 @@ sequenceDiagram
     participant Portal as AllCodex Portal
     participant AK as AllKnower
     participant LDB as LanceDB
-    participant LLM as OpenRouter (Suggest Model)
+    participant parser as OpenRouter (Suggest Model)
     participant AC as AllCodex Core (ETAPI)
 
     User->>Portal: View /lore/[id], expand RelationshipGraph
@@ -1182,9 +1182,9 @@ sequenceDiagram
     AK->>LDB: queryLore(text, 15)
     LDB-->>AK: Similar lore chunks
 
-    Note over AK: Step 2: LLM Suggestion
-    AK->>LLM: Suggest prompt + RAG context + text
-    LLM-->>AK: JSON {suggestions[]}
+    Note over AK: Step 2: parser Suggestion
+    AK->>parser: Suggest prompt + RAG context + text
+    parser-->>AK: JSON {suggestions[]}
 
     Note over AK: Step 3: Filter
     AK->>AK: Remove self-referential (targetNoteId = noteId)

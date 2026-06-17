@@ -1,7 +1,7 @@
 # AllKnower Context Compaction — Full 3-Tier Implementation Plan (v2)
 
 > Inspired by Claude Code's leaked compaction architecture (March 31, 2026 npm leak).
-> Adapted for AllKnower's stateless LLM pipeline and RAG-based lore retrieval.
+> Adapted for AllKnower's stateless parser pipeline and RAG-based lore retrieval.
 
 **Implementation status (April 3, 2026):**
 
@@ -38,8 +38,8 @@ architecture for multi-turn sessions (Tier 3).
 
 ```
 Tier 1 — RAG Budget Enforcement      free, pure logic,    prompt.ts
-Tier 2 — Chunk Summarization         cheap LLM call,      rag/chunk-compactor.ts
-Tier 3 — Session State + AutoCompact full LLM + DB,       pipeline/session-compactor.ts
+Tier 2 — Chunk Summarization         cheap parser call,      rag/chunk-compactor.ts
+Tier 3 — Session State + AutoCompact full parser + DB,       pipeline/session-compactor.ts
 ```
 
 Tiers are **independent and additive**:
@@ -67,7 +67,7 @@ Tiers are **independent and additive**:
 
 ## Tier 0 — Token Counting Infrastructure ✅
 
-> **Cost:** zero LLM calls
+> **Cost:** zero parser calls
 > **Effort:** ~20 min
 > **Impact:** foundation — every downstream tier depends on accurate-ish counts
 
@@ -116,7 +116,7 @@ export function tokensToChars(tokens: number): number {
 ```
 
 **Why `cl100k_base`?** It's the tokenizer for both Claude and GPT-4 families. Not
-perfect for every model OpenRouter might route to, but within 5% for all modern LLMs.
+perfect for every model OpenRouter might route to, but within 5% for all modern parsers.
 Good enough for budgeting, which is all we need.
 
 **Install:** `bun add tiktoken`
@@ -130,7 +130,7 @@ Good enough for budgeting, which is all we need.
 
 ## Tier 1 — RAG Budget Enforcement ✅
 
-> **Cost:** zero LLM calls, pure logic
+> **Cost:** zero parser calls, pure logic
 > **Effort:** ~30 min
 > **Impact:** immediate — prevents prompt bloat as lore base scales
 
@@ -253,7 +253,7 @@ Update `buildBrainDumpPrompt` return type:
 
 ## Tier 1.5 — Semantic Deduplication
 
-> **Cost:** zero LLM calls, vector similarity only
+> **Cost:** zero parser calls, vector similarity only
 > **Effort:** ~1 hour
 > **Impact:** prevents near-duplicate chunks from wasting budget
 
@@ -271,7 +271,7 @@ import { countTokens } from "../utils/tokens";
 
 /**
  * Deduplicate RAG chunks by content similarity.
- * Uses Jaccard similarity on token trigrams — fast, no LLM, no embeddings.
+ * Uses Jaccard similarity on token trigrams — fast, no parser, no embeddings.
  *
  * Must run BEFORE Tier 1 budget loop (operates on the full candidate set).
  */
@@ -333,7 +333,7 @@ const dedupedContext = deduplicateChunks(ragContext);
 
 ## Tier 2 — Chunk Summarization
 
-> **Cost:** one cheap LLM call per oversized chunk
+> **Cost:** one cheap parser call per oversized chunk
 > **Effort:** ~2–3 hours
 > **Impact:** medium-term — prevents individual large notes from dominating the budget
 
@@ -426,7 +426,7 @@ export async function compactChunks(chunks: RagChunk[], concurrency?: number): P
 ```
 
 **Fast path:** if `countTokens(chunk.content) <= env.RAG_CHUNK_SUMMARY_THRESHOLD_TOKENS`,
-return the chunk unchanged — no LLM call.
+return the chunk unchanged — no parser call.
 
 **Cache path:** if `getCachedSummary(chunk.content)` returns a hit, return immediately.
 
@@ -486,7 +486,7 @@ export async function compactChunks(
 ```
 
 > **Change from v1:** Added `p-limit` concurrency control. `Promise.all` with no
-> throttling on 8 oversized chunks = 8 simultaneous LLM calls. OpenRouter rate limits
+> throttling on 8 oversized chunks = 8 simultaneous parser calls. OpenRouter rate limits
 > (or your billing) will not appreciate this. Default concurrency of 3 is conservative
 > — tune based on your OpenRouter tier.
 
@@ -531,14 +531,14 @@ Then build `contextBlock` from `compactedChunks` instead of `admittedChunks`.
 
 ## Tier 3 — Session State + AutoCompact
 
-> **Cost:** full LLM call + DB writes per compaction event
+> **Cost:** full parser call + DB writes per compaction event
 > **Effort:** 1–2 days
 > **Trigger:** implement alongside multi-turn route wiring (item 6.3)
 
 ### Core Idea
 
 When multi-turn lands, session history accumulates. Without compaction, long sessions
-go incoherent — the LLM loses the plot of what's being built. The session compactor
+go incoherent — the parser loses the plot of what's being built. The session compactor
 produces a structured 7-section summary, then rebuilds context methodically
 post-compaction so the session feels seamless to both user and model.
 
@@ -711,7 +711,7 @@ export async function compactSession(session: LoreSession): Promise<LoreSessionS
     }
 
     try {
-        // ... LLM call + validation (see below)
+        // ... parser call + validation (see below)
     } finally {
         await releaseCompactionLock(session.id);
     }
@@ -759,7 +759,7 @@ On success:
 **`rebuildContext(state: LoreSessionState, recentNotes: RagChunk[]): string`**
 
 Post-compaction context rebuild. This is the **continuation message** pattern —
-the most critical detail from the Claude Code architecture. Without it, the LLM
+the most critical detail from the Claude Code architecture. Without it, the parser
 opens the next response with a recap the user doesn't want.
 
 ```ts
@@ -862,7 +862,7 @@ describe("RAG budget enforcement", () => {
 });
 ```
 
-### Tier 2 — Integration test with mock LLM
+### Tier 2 — Integration test with mock parser
 
 ```ts
 describe("Chunk compaction", () => {
@@ -874,7 +874,7 @@ describe("Chunk compaction", () => {
         expect(result.content).toContain("Constantin");
     });
 
-    it("falls back to original on LLM failure", async () => { /* ... */ });
+    it("falls back to original on parser failure", async () => { /* ... */ });
     it("returns cached summary on second call", async () => { /* ... */ });
 });
 ```

@@ -779,7 +779,7 @@ Cross-phase slices that coordinate work across services.
 
 ### Cross-Cutting: Context Compaction (AllKnower infrastructure)
 
-Infrastructure to keep RAG and LLM context usage efficient as lore databases grow.
+Infrastructure to keep RAG and parser context usage efficient as lore databases grow.
 
 | Tier | Description | Status |
 |---|---|---|
@@ -881,13 +881,13 @@ Original build sequence completed:
 35 findings from the v1 code review fixed across all 3 services:
 
 - AllKnower: userId scoping, credential consolidation, auth guards, ETAPI timeout, Prisma crash-on-fail
-- Portal: SSRF protection, dead endpoint removal, Mermaid hardening, LLM proxy timeouts, Zod validation
+- Portal: SSRF protection, dead endpoint removal, Mermaid hardening, parser proxy timeouts, Zod validation
 - Core: share index draft filtering, XSS test assertions, import extension fix
 
 ## What Was Built (Streaming + Schema Fixes) ✅
 
 - `callModelStream` rewritten from broken Responses API to SDK `chat.send({ stream: true })`
-- Zod `optStr` helper: accepts `null` from LLMs, outputs `string | undefined` (106 fields across 21 entity types)
+- Zod `optStr` helper: accepts `null` from parsers, outputs `string | undefined` (106 fields across 21 entity types)
 - `requireParameters` removed from model-router (incompatible with free-tier routing)
 - Relationship graph Phase 5: multi-hop BFS, type/confidence filters, batch apply, metrics, timeline
 
@@ -900,7 +900,7 @@ Seven recommended feature streams fully implemented and shipped:
 - **Bulk Brain Dump**: Postgres-backed job queue with single-flight worker and bulk upload page.
 - **Lore Diff & History**: revision history tracking with before/after comparisons.
 - **Push Notifications**: web-push/VAPID push notifications with in-app toast integration.
-- **Local Models Integration**: Full support for local LLM and embedding models (Ollama, LM Studio, vLLM) across all 8 LLM pipelines and embedding generation, with client-side fallback/hybrid routing to OpenRouter cloud models.
+- **Local Models Integration**: Full support for local parser and embedding models (Ollama, LM Studio, vLLM) across all 8 parser pipelines and embedding generation, with client-side fallback/hybrid routing to OpenRouter cloud models.
 
 ## What To Build Next
 

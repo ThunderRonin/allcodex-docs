@@ -78,7 +78,7 @@ Browser  →  POST /api/auth/login or /api/config/allknower-login  (AllKnower: e
 |--------|------|-------------|---------|
 | `POST` | `/api/lore/[id]/attributes` | Create a label or relation attribute. | AllCodex ETAPI |
 | `DELETE` | `/api/lore/[id]/attributes?attrId=<ID>` | Delete an attribute by ID. Returns 204. | AllCodex ETAPI |
-| `POST` | `/api/lore/[id]/relationships` | Get existing relations + AI-suggested connections for a note. | AllKnower + AllCodex ETAPI |
+| `POST` | `/api/lore/[id]/relationships` | Get existing relations + automatically suggested connections for a note. | AllKnower + AllCodex ETAPI |
 
 ### POST `/api/lore/[id]/attributes` — Create Attribute
 
@@ -160,7 +160,7 @@ Returns:
 
 | Method | Path | Description | Backend |
 |--------|------|-------------|---------|
-| `POST` | `/api/brain-dump` | Process raw text through the AI extraction pipeline. | AllKnower |
+| `POST` | `/api/brain-dump` | Process raw text through the extraction pipeline. | AllKnower |
 | `POST` | `/api/brain-dump/stream` | SSE-streamed auto brain dump (progressive entity cards, tokens, done). | AllKnower |
 | `POST` | `/api/brain-dump/commit` | Commit reviewed entities from review mode. | AllKnower |
 | `GET` | `/api/brain-dump/history` | List the 20 most recent brain dumps. | AllKnower |
@@ -203,7 +203,7 @@ Returns:
 |--------|------|-------------|---------|
 | `POST` | `/api/ai/consistency` | Run a RAG-augmented consistency scan. | AllKnower |
 | `GET\|POST` | `/api/ai/gaps` | Detect underdeveloped lore areas. POST preferred (avoids caching). | AllKnower |
-| `POST` | `/api/ai/relationships` | Get AI relationship suggestions for text/note. | AllKnower |
+| `POST` | `/api/ai/relationships` | Get relationship suggestions for text/note. | AllKnower |
 | `PUT` | `/api/ai/relationships` | Apply suggested relationships (persists as AllCodex relation attributes). | AllKnower |
 | `POST` | `/api/lore/[id]/copilot/chat` | Article copilot turn — sends conversation transcript + current note context, returns assistant message + optional proposal. | AllKnower |
 | `POST` | `/api/lore/[id]/copilot/stream` | SSE-streamed article copilot turn (status, token, reasoning, result, done). | AllKnower |
@@ -280,7 +280,7 @@ Each note includes: `noteId`, `title`, `isDraft`, `isGmOnly`, `shareAlias`, `isP
 | `GET` | `/api/integrations/allcodex/status` | Whether a Core integration is connected for the user. | AllKnower |
 | `DELETE` | `/api/integrations/allcodex` | Remove the user's stored Core integration. | AllKnower |
 | `DELETE` | `/api/config/disconnect?service=allcodex\|allknower\|all` | Clear stored credentials. | None (local) |
-| `GET` | `/api/config/models` | List configured/available LLM models per task. | AllKnower |
+| `GET` | `/api/config/models` | List configured/available parser models per task. | AllKnower |
 | `POST` | `/api/config/wipe` | Dangerous: wipe the user's lore + RAG state (LanceDB table + Prisma tracking). | AllKnower |
 | `GET` | `/api/config/portal` | Get portal config (lore root note ID). | None (local) |
 | `PUT` | `/api/config/portal` | Set portal config. | None (local) |
@@ -350,4 +350,4 @@ Token/cost usage dashboard and per-user token budgets.
 
 5. **Cookie-only secrets**: All tokens are stored in HTTP-only cookies with `secure=true` in production. Browser JavaScript does not have access to backend credentials.
 
-6. **Dual backend**: Routes proxy to either AllCodex ETAPI (lore CRUD, search, content) or AllKnower (AI features, brain dump, RAG, import).
+6. **Dual backend**: Routes proxy to either AllCodex ETAPI (lore CRUD, search, content) or AllKnower (parsing features, brain dump, RAG, import).

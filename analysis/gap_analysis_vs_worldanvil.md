@@ -176,4 +176,4 @@ Effort is rated: **S** (days), **M** (1–2 weeks), **L** (3+ weeks).
 
 ## Where AllCodex Is Ahead (Not Asked, But Context)
 
-For perspective: World Anvil has *zero* AI features. AllCodex's Brain Dump, RAG search, consistency checking, gap detection, and relationship suggestion are capabilities World Anvil doesn't offer at any tier. Our gap is in **authoring UX**, not in intelligence.
+For perspective: World Anvil has *zero* parsing features. AllCodex's Brain Dump, RAG search, consistency checking, gap detection, and relationship suggestion are capabilities World Anvil doesn't offer at any tier. Our gap is in **authoring UX**, not in intelligence.

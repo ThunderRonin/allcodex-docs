@@ -9,13 +9,13 @@ description: "Product updates and improvements"
 
 **Local model support**
 
-AllKnower can now route LLM and embedding calls to local providers such as Ollama and LM Studio alongside OpenRouter. Use the `local/` or `ollama/` prefix on any task model to point it at your local endpoint, configured via `LOCAL_PROVIDER_BASE_URL` and `LOCAL_PROVIDER_API_KEY`. See [Configuration](/self-hosting/configuration) for setup.
+AllKnower can now route parser and embedding calls to local providers such as Ollama and LM Studio alongside OpenRouter. Use the `local/` or `ollama/` prefix on any task model to point it at your local endpoint, configured via `LOCAL_PROVIDER_BASE_URL` and `LOCAL_PROVIDER_API_KEY`. See [Configuration](/self-hosting/configuration) for setup.
 
 ## Updates
 
 **Cloud fallbacks for local models**
 
-When a local model call fails, AllKnower automatically falls back to the configured cloud models for that task. Brain dump, autocomplete, and other AI features stay reliable even when your local server is offline. Configure fallbacks per task with `*_FALLBACK_1`, `_2`, and `_3`.
+When a local model call fails, AllKnower automatically falls back to the configured cloud models for that task. Brain dump, autocomplete, and other parsing features stay reliable even when your local server is offline. Configure fallbacks per task with `*_FALLBACK_1`, `_2`, and `_3`.
 
 **Cleaner local requests**
 
@@ -109,7 +109,7 @@ The Portal relationship view renders with React Flow instead of Mermaid, providi
 
 **Push notifications**
 
-Subscribe to push notifications from the Portal to receive alerts when AI jobs, suggestions, and shared updates finish. A notification bell is now in the top navigation.
+Subscribe to push notifications from the Portal to receive alerts when parsing jobs, suggestions, and shared updates finish. A notification bell is now in the top navigation.
 
 **Streaming AI responses**
 

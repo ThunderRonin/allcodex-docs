@@ -1,5 +1,5 @@
 ---
-title: "AI Analysis Tools"
+title: "Automated Analysis Tools"
 description: "Scan your campaign grimoire for contradictions, relationship links, and narrative gaps."
 ---
 
@@ -24,7 +24,7 @@ The Relationship Suggester connects entities by identifying narrative links and 
 
 ### Features
 * **Automatic suggestion**: When you view a note's relationship panel, the suggester scans the note text and recommends connections to other entities (such as *ally*, *serves*, *located_in*, or *member_of*).
-* **Caching and deduplication**: To minimize token usage, AllKnower caches suggestions by content hash. Repeating a query on an unmodified note costs zero tokens. The system deduplicates in-flight requests to prevent parallel LLM calls.
+* **Caching and deduplication**: To minimize token usage, AllKnower caches suggestions by content hash. Repeating a query on an unmodified note costs zero tokens. The system deduplicates in-flight requests to prevent parallel parser calls.
 * **Canonical mapping**: Suggested relations strictly map to AllCodex's 17 canonical relationship types (e.g. `~relMemberOf`, `~relLocatedIn`). 
 * **Easy application**: Apply suggestions to write them to your database as bidirectional attributes.
 

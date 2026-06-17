@@ -6,7 +6,7 @@ description: "A deep dive into the three-service system powering the AllCodex gr
 AllCodex is a decoupled, multi-tier system. AllCodex splits concerns into three dedicated services:
 
 1. **AllCodex Portal** (Web Frontend)
-2. **AllKnower** (AI Orchestrator & RAG Engine)
+2. **AllKnower** (Semantic Graph Compiler & RAG Engine)
 3. **AllCodex Core** (Headless Lore Database)
 
 ---
@@ -16,14 +16,14 @@ AllCodex is a decoupled, multi-tier system. AllCodex splits concerns into three 
 | Service | Stack | Port | Primary Responsibility |
 | :--- | :--- | :--- | :--- |
 | **AllCodex Portal** | Next.js 16, React 19, Bun, Tailwind CSS 4 | `3000` | The user interface. Serves the grimoire web UI, manages local state, and proxies all API requests server-side. |
-| **AllKnower** | Elysia, Bun, Prisma (Postgres), LanceDB | `3001` | The AI brain. Handles OpenRouter models, stores vector embeddings, manages background dump processing, and hosts analytics. |
+| **AllKnower** | Elysia, Bun, Prisma (Postgres), LanceDB | `3001` | The parsing brain. Handles OpenRouter models, stores vector embeddings, manages background dump processing, and hosts analytics. |
 | **AllCodex Core** | Node.js, Express 5, SQLite | `8080` | The database. A customized, headless fork of the Trilium note-taking application. Stores all nodes, attributes, and relations, and renders public share pages. |
 
 ---
 
 ## Communication and data flow
 
-To maintain security, the browser does not communicate directly with the database (Core) or the AI brain (AllKnower). The Portal acts as a BFF (Backend-for-Frontend) proxy.
+To maintain security, the browser does not communicate directly with the database (Core) or the parsing brain (AllKnower). The Portal acts as a BFF (Backend-for-Frontend) proxy.
 
 ```
   Browser (Client)
@@ -39,11 +39,11 @@ To maintain security, the browser does not communicate directly with the databas
          ▼                          ▼
   AllCodex Core (:8080)     AllKnower (:3001)
                             ┌───────┴──────────────────────────────┐
-                            │ AI Orchestrator                      │
+                            │ Semantic Graph Compiler                      │
                             │                                      │
                             │ 1. Vector Search (LanceDB)           │
                             │ 2. Relational Analytics (PostgreSQL) │
-                            │ 3. LLM Queries (OpenRouter)          │
+                            │ 3. Semantic Parsing (OpenRouter)          │
                             └───────┬──────────────────────────────┘
                                     │
                                     │ (Calls ETAPI to write extracted lore)
@@ -57,7 +57,7 @@ To maintain security, the browser does not communicate directly with the databas
 2. **HTTP-only Cookies**: The Portal resolves user sessions from HTTP-only cookies (`allknower_token` and `allknower_url`). Browser-based JavaScript cannot read these cookies, eliminating token theft vectors.
 3. **Unidirectional Database Writes**:
    - The user writes directly to Core via Portal proxy (when editing notes manually).
-   - The user triggers AI jobs (like Brain Dump) via Portal. AllKnower computes the changes and writes them to Core via the secure Core ETAPI interface.
+   - The user triggers parsing jobs (like Brain Dump) via Portal. AllKnower computes the changes and writes them to Core via the secure Core ETAPI interface.
    - Core **never** makes outbound calls to AllKnower or the Portal.
 
 ---

@@ -12,10 +12,10 @@ This document outlines the major architectural and functional changes accomplish
 
 ## 3. Relationship Graph & Apply Fixes
 **Previous State:** 
-- Applying AI-suggested relationships would map unknown types to a generic `relOther`.
+- Applying automatically suggested relationships would map unknown types to a generic `relOther`.
 - The system allowed duplicate relations to be written.
 - The Portal UI failed to refresh after applying, leaving processed suggestions visible as if they were unapplied.
-- Missing `targetTitle` fields from the AI response caused the graph to crash (`undefined.replace`).
+- Missing `targetTitle` fields from the parser response caused the graph to crash (`undefined.replace`).
 **v1 State:** 
 - **Backend:** `applyRelations` now enforces canonical mapping (e.g., `member_of` → `relMemberOf`), rejects unknown types, and safely skips duplicates. Returns explicit `applied`, `skipped`, and `failed` arrays.
 - **Frontend:** The graph sanitization logic handles missing titles gracefully. The UI immediately invalidates the relationship query cache upon application, transitions dashed AI edges to solid existing edges, and visually reports any skipped or failed relations.
@@ -25,7 +25,7 @@ This document outlines the major architectural and functional changes accomplish
 **v1 State:** Integrated a dangerous-ops "Wipe DB Lore & RAG" card into the Portal Settings UI. The `/config/wipe` route now comprehensively drops the LanceDB table AND clears all associated tracking state from Prisma, including `LoreSession`, `LlmCallLog`, `RagIndexMeta`, `BrainDumpHistory`, and `RelationHistory`.
 
 ## 5. Zero-Login Auto-Provisioning
-**Previous State:** First-time users had to manually register an AllKnower account, log in, then separately connect AllCodex Core credentials in Settings before any AI features would work.
+**Previous State:** First-time users had to manually register an AllKnower account, log in, then separately connect AllCodex Core credentials in Settings before any parsing features would work.
 **v1 State:** A three-stage bootstrap chain eliminates all manual setup:
 1. **AllCodex Core** auto-sets its password from the `ALLCODEX_PASSWORD` env var at startup.
 2. **AllKnower** runs a bootstrap sequence on startup: creates a default user via `better-auth` sign-up, obtains an ETAPI token from Core via password auth, and stores it as an encrypted `UserIntegration` for that user.

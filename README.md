@@ -72,5 +72,5 @@ To run and preview the documentation site locally:
 
 - [AGENTS.md](../../AGENTS.md): Root agent guide covering commands, conventions, key files, and pitfalls
 - [allcodex-core/CLAUDE.md](../../allcodex-core/CLAUDE.md): AllCodex Core deep dive
-- [allknower/docs/ai_architecture_investigation.md](../../allknower/docs/ai_architecture_investigation.md): RAG/AI improvement research (Refer to AllKnower's `.env.example` for current LLM model preferences)
+- [allknower/docs/ai_architecture_investigation.md](../../allknower/docs/ai_architecture_investigation.md): RAG/AI improvement research (Refer to AllKnower's `.env.example` for current parser model preferences)
 - [allcodex-portal/ROADMAP.md](../../allcodex-portal/ROADMAP.md): Portal-specific feature backlog

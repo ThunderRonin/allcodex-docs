@@ -1,9 +1,9 @@
 ---
 title: "Canonical Lore Schema"
-description: "Detailed catalog of the 21 lore types, their database attributes, and AI extraction schemas."
+description: "Detailed catalog of the 21 lore types, their database attributes, and parser extraction schemas."
 ---
 
-This reference outlines the schema conventions shared across AllCodex Core (SQLite database templates), AllKnower (AI extraction and Zod schemas), and the Portal frontend.
+This reference outlines the schema conventions shared across AllCodex Core (SQLite database templates), AllKnower (parser extraction and Zod schemas), and the Portal frontend.
 
 ---
 
@@ -11,8 +11,8 @@ This reference outlines the schema conventions shared across AllCodex Core (SQLi
 
 In AllCodex, lore attributes live in three states:
 1. **Database Templates (`hidden_subtree_templates.ts`)**: Promoted labels defined in the database. These render as high-priority, structured input fields in the Portal UI.
-2. **AI Extraction Schema (`lore.ts`)**: Zod-validated JSON keys that AllKnower instructs LLMs to extract during a Brain Dump.
-3. **Portal UI Render**: The client layout matches database templates. AI-extracted attributes that do not map to a database promoted label are saved as raw, unpromoted tags at the bottom of the entry.
+2. **AI Extraction Schema (`lore.ts`)**: Zod-validated JSON keys that AllKnower instructs semantic parsers to extract during a Brain Dump.
+3. **Portal UI Render**: The client layout matches database templates. extracted attributes that do not map to a database promoted label are saved as raw, unpromoted tags at the bottom of the entry.
 
 ---
 
@@ -34,7 +34,7 @@ NPCs, PCs, and historical figures.
   * `status` (Text): e.g. Alive, Dead, Missing.
   * `secrets` (Text): Hidden GM-only facts.
   * `goals` (Text): Motivations or immediate plans.
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts all of the above plus `physicalDescription`, `personality`, and `backstory` (written directly into the note's HTML body instead of database labels).
 
 ### 2. Location
@@ -47,7 +47,7 @@ Cities, dungeons, regions, landmarks, or planes.
   * `ruler` (Text): Factions or characters in control.
   * `secrets` (Text): Hidden GM-only facts.
   * `geolocation` (Text): Latitude/longitude coordinates for map pins.
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts `locationType`, `region`, `population`, `ruler`, `secrets` plus `history`, `notableLandmarks`, and `connectedLocations` (stored as unpromoted labels).
 
 ### 3. Faction
@@ -60,7 +60,7 @@ Organizations, guilds, or political powers with goals and leadership.
   * `goals` (Text): Major objectives.
   * `secrets` (Text): GM-only details.
   * `status` (Text): Active, Defunct, Disbanded.
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts `factionType`, `foundingDate`, `leader`, `goals`, `secrets` plus `members`, `allies`, `enemies`, and `hierarchy` (saved as unpromoted labels).
 
 ### 4. Creature
@@ -72,7 +72,7 @@ Monsters, beasts, or distinct entities.
   * `diet` (Text): Feeding habits.
   * `dangerLevel` (Text): Threat level or CR indicator.
   * `abilities` (Text): Notable traits.
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts all of the above plus `lore` (written to HTML content) and D&D-style stats (`ac`, `hp`, `speed`, `str`, `dex`, `con`, `int`, `wis`, `cha`, `cr`).
 
 ### 5. Event
@@ -84,7 +84,7 @@ Historical occurrences, campaign sessions, or planned encounters.
   * `participants` (Text): Active factions/NPCs.
   * `outcome` (Text): Historical result.
   * `secrets` (Text): GM-only details.
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts all database promoted attributes.
 
 ### 6. Timeline
@@ -94,7 +94,7 @@ Sequences of events.
   * `calendarSystem` (Text): e.g. Harptos, Gregorian.
   * `sorted` (Text): Sorting mechanism.
   * `sortBy` (Text): Key field to sort.
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts `startDate`, `endDate`, and `events` (stored as unpromoted labels).
 
 ### 7. Manuscript
@@ -104,7 +104,7 @@ Books, ledgers, ancient scrolls, or in-world literature.
   * `genre` (Text): e.g. Arcane Thesis, Diary.
   * `manuscriptStatus` (Text): e.g. Complete, Fragment, Lost.
   * `wordCount` (Number): Document length.
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts `wordCount` and `status` (mapped to `manuscriptStatus`).
 
 ### 8. Statblock
@@ -116,7 +116,7 @@ TTRPG stats (e.g., D&D 5e monster templates).
   * Stats: `ac`, `hp`, `speed`, `str`, `dex`, `con`, `int`, `wis`, `cha`.
   * Resistances/Vulnerabilities: `immunities`, `resistances`, `vulnerabilities`.
   * Actions: `abilities`, `actions`, `legendaryActions`.
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts `system` and `cr` alongside standard stats, mapping actions and abilities to the database.
 
 ### 9. Item
@@ -128,7 +128,7 @@ Equipment, artifacts, weapons, or key campaign items.
   * `creator` (Text): Historical figure or faction.
   * `magicProperties` (Text): Enchantments.
   * `history` (Text): Origins.
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts all of the above plus `currentOwner` and `secrets` (unpromoted).
 
 ### 10. Spell
@@ -141,7 +141,7 @@ Magical incantations or abilities.
   * `range` (Text): Distance.
   * `components` (Text): V, S, M (and materials).
   * `duration` (Text): Concentration, Instantaneous.
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts all of the above plus `origin` and `secrets` (unpromoted).
 
 ### 11. Building
@@ -153,7 +153,7 @@ Specific structural objects like taverns, keeps, or shrines.
   * `purpose` (Text): Role in town.
   * `condition` (Text): Ruined, Pristine, Under Construction.
   * `secrets` (Text): GM-only details.
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts all of the above plus `location` (unpromoted).
 
 ### 12. Language
@@ -161,7 +161,7 @@ In-world speaking tongues and alphabets.
 * **Template ID**: `_template_language`
 * **Database Promoted Attributes**:
   * `languageFamily` (Text), `speakers` (Text), `script` (Text), `samplePhrase` (Text).
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts all of the above plus `origin` (unpromoted).
 
 ### 13. Organization
@@ -169,7 +169,7 @@ Guilds, clubs, or non-political local groups.
 * **Template ID**: `_template_organization`
 * **Database Promoted Attributes**:
   * `orgType` (Text), `leader` (Text), `headquarters` (Text), `membership` (Text), `purpose` (Text), `status` (Text), `secrets` (Text).
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts `orgType`, `purpose`, `foundingDate`, `leader`, `headquarters`, `status`, `secrets` plus `members` and `resources` (unpromoted).
 
 ### 14. Race
@@ -177,7 +177,7 @@ Species, sub-species, or ethnic groups.
 * **Template ID**: `_template_race`
 * **Database Promoted Attributes**:
   * `homeland` (Text), `lifespan` (Text), `traits` (Text), `culture` (Text), `relations` (Text).
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts `homeland`, `lifespan`, `culture`, `abilities`, `racialType`, `physicalTraits` (which maps to `traits`), `languages`, `relations`, and `secrets`.
 
 ### 15. Myth
@@ -185,7 +185,7 @@ Lore legends or folklore.
 * **Template ID**: `_template_myth`
 * **Database Promoted Attributes**:
   * `mythType` (Text), `origin` (Text), `truthStatus` (Text), `relatedEntities` (Text).
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts `mythType`, `origin` plus `tellers`, `truthBasis`, `significance`, and `secrets` (saved as unpromoted).
 
 ### 16. Cosmology
@@ -193,7 +193,7 @@ Planes of existence or cosmic dimensions.
 * **Template ID**: `_template_cosmology`
 * **Database Promoted Attributes**:
   * `planes` (Text), `cosmicForces` (Text), `afterlife` (Text), `creationMyth` (Text).
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts `planes` plus `domain`, `laws`, `source`, `interactions`, and `secrets` (unpromoted).
 
 ### 17. Deity
@@ -201,7 +201,7 @@ Gods, pantheons, or celestial powers.
 * **Template ID**: `_template_deity`
 * **Database Promoted Attributes**:
   * `domain` (Text), `alignment` (Text), `symbol` (Text), `worshippers` (Text), `divineStatus` (Text).
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts `alignment`, `symbol`, `worshippers` plus `domains` (plural), `rank`, `allies`, `enemies`, and `secrets` (unpromoted).
 
 ### 18. Religion
@@ -209,7 +209,7 @@ Organized faiths and belief networks.
 * **Template ID**: `_template_religion`
 * **Database Promoted Attributes**:
   * `deity` (Text), `tenets` (Text), `practices` (Text), `holyText` (Text), `faithStatus` (Text).
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts `deity`, `tenets` plus `pantheon`, `clergy`, `holyDays`, `headquarters`, `followers`, and `secrets` (unpromoted).
 
 ### 19. Session
@@ -222,7 +222,7 @@ TTRPG campaign recap entries.
   * `recap` (Text): Campaign events.
   * `hooks` (Text): Unresolved clues or tasks.
   * `gmNotes` (Text): Secret GM ledger.
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts `sessionDate`, `players`, `sessionStatus`, `recap`, `hooks`.
 
 ### 20. Quest
@@ -235,7 +235,7 @@ Campaign objectives or milestones.
   * `location` (Text): Destination node.
   * `hooks` (Text): Plot hooks.
   * `consequences` (Text): Results of completion or failure.
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts all of the above (allowing `"unknown"` status as a fallback).
 
 ### 21. Scene
@@ -246,7 +246,7 @@ Encounters, locations, or isolated narrative units.
   * `participants` (Text): Involved NPCs/monsters.
   * `outcome` (Text): Resolving event.
   * `gmNotes` (Text): Secret notes.
-* **AI Pipeline Schema**:
+* **Parser Pipeline Schema**:
   * Extracts all of the above.
 
 ---

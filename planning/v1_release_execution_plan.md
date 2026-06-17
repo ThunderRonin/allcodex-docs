@@ -261,7 +261,7 @@ Implementation:
 Acceptance:
 
 - Click Apply, refresh page, relationship remains visible as existing.
-- Applied suggestion disappears from the AI Suggestions list.
+- Applied suggestion disappears from the parser Suggestions list.
 - Graph line style matches source: solid existing, dashed unapplied AI.
 - Multiple relation types to the same target can be represented without hiding one incorrectly.
 - Failed apply shows an error instead of an Applied state.

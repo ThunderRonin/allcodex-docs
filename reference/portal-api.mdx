@@ -3,7 +3,7 @@ title: "Portal API Proxy"
 description: "Reference guide for all AllCodex Portal Next.js API proxy routes."
 ---
 
-The Portal acts as a Backend for Frontend (BFF) proxy. The browser does not communicate directly with the database (AllCodex Core) or the AI brain (AllKnower). It sends requests to `/api/*` on the Portal, which parses authentication cookies server-side and forwards requests to private backends.
+The Portal acts as a Backend for Frontend (BFF) proxy. The browser does not communicate directly with the database (AllCodex Core) or the parsing brain (AllKnower). It sends requests to `/api/*` on the Portal, which parses authentication cookies server-side and forwards requests to private backends.
 
 ---
 
@@ -60,7 +60,7 @@ These routes proxy requests directly to the AllCodex Core ETAPI.
 | :--- | :--- | :--- | :--- |
 | `POST` | `/api/lore/[id]/attributes` | Create a label or relation attribute. | AllCodex ETAPI |
 | `DELETE` | `/api/lore/[id]/attributes?attrId=<ID>` | Delete an attribute by ID. Returns 204. | AllCodex ETAPI |
-| `POST` | `/api/lore/[id]/relationships` | Get existing relations + AI-suggested connections for a note. | AllKnower + AllCodex ETAPI |
+| `POST` | `/api/lore/[id]/relationships` | Get existing relations + automatically suggested connections for a note. | AllKnower + AllCodex ETAPI |
 
 ### POST `/api/lore/[id]/attributes` — create label
 
@@ -144,7 +144,7 @@ Returns:
 
 | Method | Path | Description | Backend |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/brain-dump` | Process raw text through the AI extraction pipeline. | AllKnower |
+| `POST` | `/api/brain-dump` | Process raw text through the extraction pipeline. | AllKnower |
 | `POST` | `/api/brain-dump/stream` | SSE-streamed auto brain dump (progressive entity cards, tokens, done). | AllKnower |
 | `POST` | `/api/brain-dump/commit` | Commit reviewed entities from review mode. | AllKnower |
 | `GET` | `/api/brain-dump/history` | List the 20 most recent brain dumps. | AllKnower |
@@ -181,13 +181,13 @@ Returns:
 
 ---
 
-## AI tools and copilot
+## Parsing tools and copilot
 
 | Method | Path | Description | Backend |
 | :--- | :--- | :--- | :--- |
 | `POST` | `/api/ai/consistency` | Run a RAG-augmented consistency scan. | AllKnower |
 | `GET\|POST` | `/api/ai/gaps` | Detect underdeveloped lore areas. POST preferred (avoids caching). | AllKnower |
-| `POST` | `/api/ai/relationships` | Get AI relationship suggestions for text/note. | AllKnower |
+| `POST` | `/api/ai/relationships` | Get relationship suggestions for text/note. | AllKnower |
 | `PUT` | `/api/ai/relationships` | Apply suggested relationships (persists as AllCodex relation attributes). | AllKnower |
 | `POST` | `/api/lore/[id]/copilot/chat` | Article copilot turn — sends conversation transcript + current note context, returns assistant message + optional proposal. | AllKnower |
 | `POST` | `/api/lore/[id]/copilot/stream` | SSE-streamed article copilot turn (status, token, reasoning, result, done). | AllKnower |
@@ -299,7 +299,7 @@ These routes power the Portal's public-facing site (`/` and `/public/lore/[id]`)
 | `GET` | `/api/integrations/allcodex/status` | Whether a Core integration is connected for the user. | AllKnower |
 | `DELETE` | `/api/integrations/allcodex` | Remove the user's stored Core integration. | AllKnower |
 | `DELETE` | `/api/config/disconnect?service=allcodex\|allknower\|all` | Clear stored credentials. | None (local) |
-| `GET` | `/api/config/models` | List configured/available LLM models per task. | AllKnower |
+| `GET` | `/api/config/models` | List configured/available parser models per task. | AllKnower |
 | `POST` | `/api/config/wipe` | Dangerous: wipe the user's lore + RAG state (LanceDB table + Prisma tracking). | AllKnower |
 | `GET` | `/api/config/portal` | Get portal config (lore root note ID). | None (local) |
 | `PUT` | `/api/config/portal` | Set portal config. | None (local) |
